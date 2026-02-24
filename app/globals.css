@@ -1,0 +1,165 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0a0a0f;
+  --foreground: #e8e8f0;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-inter), sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: rgba(168, 85, 247, 0.3);
+    color: #fff;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0a0a0f;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #2a2a3a;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3a3a5a;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .glass-hover {
+    transition: all 0.2s ease;
+  }
+
+  .glass-hover:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.03) 25%,
+      rgba(255, 255, 255, 0.08) 37%,
+      rgba(255, 255, 255, 0.03) 63%
+    );
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+  }
+
+  .noise {
+    position: relative;
+  }
+
+  .noise::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .album-glow {
+    box-shadow: 0 0 60px -10px var(--album-color, rgba(168, 85, 247, 0.4));
+  }
+}
+
+/* Tiptap editor styles */
+.ProseMirror {
+  outline: none;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #6b7280;
+  pointer-events: none;
+  height: 0;
+}
+
+.ProseMirror h1 {
+  @apply text-3xl font-serif font-bold mb-4 mt-6 text-white;
+}
+
+.ProseMirror h2 {
+  @apply text-2xl font-serif font-bold mb-3 mt-5 text-white;
+}
+
+.ProseMirror h3 {
+  @apply text-xl font-serif font-semibold mb-2 mt-4 text-white;
+}
+
+.ProseMirror p {
+  @apply mb-4 text-zinc-300 leading-relaxed;
+}
+
+.ProseMirror ul {
+  @apply list-disc list-inside mb-4 text-zinc-300 space-y-1;
+}
+
+.ProseMirror ol {
+  @apply list-decimal list-inside mb-4 text-zinc-300 space-y-1;
+}
+
+.ProseMirror blockquote {
+  @apply border-l-4 border-purple-500 pl-4 italic text-zinc-400 mb-4;
+}
+
+.ProseMirror a {
+  @apply text-purple-400 underline underline-offset-2;
+}
+
+.ProseMirror strong {
+  @apply font-semibold text-white;
+}
+
+.ProseMirror em {
+  @apply italic text-zinc-200;
+}
+
+.ProseMirror code {
+  @apply bg-zinc-800 text-purple-300 px-1.5 py-0.5 rounded text-sm font-mono;
+}
+
+.ProseMirror pre {
+  @apply bg-zinc-900 rounded-lg p-4 mb-4 overflow-x-auto;
+}
+
+.ProseMirror pre code {
+  @apply bg-transparent p-0 text-zinc-300;
+}

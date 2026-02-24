@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Album {
+  id             String   @id @default(cuid())
+  spotifyId      String?  @unique
+  title          String
+  artist         String
+  coverUrl       String?
+  releaseYear    Int?
+  spotifyGenres  String[]
+  trackCount     Int?
+  durationMs     Int?
+  tracks         Json?
+
+  // Ranking
+  score          Float?
+  tier           String?
+  rank           Int?     @unique
+
+  // Status
+  status         String   @default("reviewed") // reviewed | want_to_listen | listening | archived
+
+  // Reviews
+  shortBlurb     String?
+  review         String?  @db.Text
+  listenDate     DateTime?
+  moodTags       String[]
+  userGenreTags  String[]
+  favoriteTracks String[]
+
+  // Visuals
+  dominantColor  String?
+  paletteColors  String[]
+
+  // Similar albums (stored as Album IDs)
+  similarAlbums  String[]
+
+  // Relations
+  relistens      Relisten[]
+  rankHistory    RankHistory[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status])
+  @@index([rank])
+  @@index([score])
+  @@index([artist])
+}
+
+model Relisten {
+  id        String   @id @default(cuid())
+  albumId   String
+  album     Album    @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
+model RankHistory {
+  id        String   @id @default(cuid())
+  albumId   String
+  album     Album    @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  rank      Int?
+  score     Float?
+  tier      String?
+  createdAt DateTime @default(now())
+}

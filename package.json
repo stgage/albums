@@ -1,0 +1,48 @@
+{
+  "name": "albums",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "db:generate": "prisma generate"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.7.4",
+    "@prisma/client": "^5.22.0",
+    "@tiptap/extension-link": "^2.10.4",
+    "@tiptap/extension-placeholder": "^2.10.4",
+    "@tiptap/extension-text-align": "^2.10.4",
+    "@tiptap/extension-underline": "^2.10.4",
+    "@tiptap/react": "^2.10.4",
+    "@tiptap/starter-kit": "^2.10.4",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^11.15.0",
+    "lucide-react": "^0.469.0",
+    "next": "^16.1.6",
+    "next-auth": "^5.0.0-beta.25",
+    "node-vibrant": "^3.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "recharts": "^2.14.1",
+    "sharp": "^0.33.5",
+    "tailwind-merge": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "^16.1.6",
+    "postcss": "^8",
+    "prisma": "^5.22.0",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5"
+  }
+}

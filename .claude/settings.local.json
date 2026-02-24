@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --version)",
+      "Bash(npm --version)",
+      "Bash(source ~/.zshrc)",
+      "Bash(source:*)",
+      "Bash(mdfind:*)",
+      "Bash(echo:*)",
+      "Bash(curl:*)",
+      "Bash(bash)",
+      "Bash(export NVM_DIR=\"$HOME/.nvm\")",
+      "Bash(. \"$NVM_DIR/nvm.sh\")",
+      "Bash(nvm install:*)",
+      "Bash(npx create-next-app:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}
