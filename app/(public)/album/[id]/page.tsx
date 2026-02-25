@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { getTierColor, scoreToTier, formatDuration, formatTrackDuration } from "@/lib/utils";
+import { formatDuration, formatTrackDuration } from "@/lib/utils";
 import { Calendar, Clock, Disc3, Music, ArrowLeft, RotateCcw, Heart } from "lucide-react";
 import { format } from "date-fns";
 import type { Metadata } from "next";
@@ -34,8 +34,6 @@ export default async function AlbumPage({ params }: Props) {
   const album = await getAlbum(id);
   if (!album) notFound();
 
-  const tier = album.tier || (album.score ? scoreToTier(album.score) : null);
-  const tierColor = tier ? getTierColor(tier) : null;
   const bgColor = album.dominantColor ?? "#1a1a2e";
 
   const tracks = album.tracks as Array<{
@@ -124,29 +122,15 @@ export default async function AlbumPage({ params }: Props) {
         <div className="grid md:grid-cols-3 gap-8">
           {/* Main content */}
           <div className="md:col-span-2 space-y-8">
-            {/* Score / Tier */}
-            {(album.score || tier) && (
+            {/* Score */}
+            {album.score && (
               <div className="flex items-center gap-4">
-                {album.score && (
-                  <div>
-                    <p className="text-5xl font-serif font-bold text-white">
-                      {album.score.toFixed(1)}
-                    </p>
-                    <p className="text-xs text-zinc-500 mt-0.5">out of 10</p>
-                  </div>
-                )}
-                {tier && (
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-serif font-black"
-                    style={{
-                      backgroundColor: (tierColor ?? "#fff") + "22",
-                      color: tierColor ?? "#fff",
-                      border: `2px solid ${tierColor ?? "#fff"}44`,
-                    }}
-                  >
-                    {tier}
-                  </div>
-                )}
+                <div>
+                  <p className="text-5xl font-serif font-bold text-white">
+                    {album.score.toFixed(1)}
+                  </p>
+                  <p className="text-xs text-zinc-500 mt-0.5">out of 10</p>
+                </div>
                 {album.rank && (
                   <div className="text-zinc-400">
                     <p className="text-lg font-semibold text-white">

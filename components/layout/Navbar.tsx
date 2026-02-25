@@ -4,15 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Disc3, BarChart3, ListOrdered, Grid3X3, Layers, BookmarkPlus, Settings } from "lucide-react";
+import { Disc3, BarChart3, ListOrdered, Grid3X3, Settings } from "lucide-react";
 
 const navLinks = [
   { href: "/", label: "Home", icon: Disc3 },
   { href: "/browse", label: "Browse", icon: Grid3X3 },
   { href: "/ranked", label: "Ranked", icon: ListOrdered },
-  { href: "/tiers", label: "Tiers", icon: Layers },
   { href: "/stats", label: "Stats", icon: BarChart3 },
-  { href: "/queue", label: "Queue", icon: BookmarkPlus },
 ];
 
 export function Navbar() {

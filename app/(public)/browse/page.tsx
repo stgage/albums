@@ -19,7 +19,6 @@ async function getAllAlbums() {
       artist: true,
       coverUrl: true,
       score: true,
-      tier: true,
       releaseYear: true,
       userGenreTags: true,
       moodTags: true,

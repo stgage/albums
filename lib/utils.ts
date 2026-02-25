@@ -24,34 +24,6 @@ export function formatTrackDuration(ms: number): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-export function getTierColor(tier: string | null | undefined): string {
-  switch (tier?.toUpperCase()) {
-    case "S":
-      return "#FFD700";
-    case "A":
-      return "#FF6B6B";
-    case "B":
-      return "#4ECDC4";
-    case "C":
-      return "#45B7D1";
-    case "D":
-      return "#96CEB4";
-    case "F":
-      return "#6B7280";
-    default:
-      return "#9CA3AF";
-  }
-}
-
-export function scoreToTier(score: number | null | undefined): string {
-  if (!score) return "?";
-  if (score >= 9) return "S";
-  if (score >= 8) return "A";
-  if (score >= 7) return "B";
-  if (score >= 6) return "C";
-  if (score >= 5) return "D";
-  return "F";
-}
 
 export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);

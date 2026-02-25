@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Image from "next/image";
 import Link from "next/link";
-import { getTierColor, scoreToTier } from "@/lib/utils";
+
 import { Crown, Disc3 } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -25,7 +25,6 @@ async function getRankedAlbums() {
       artist: true,
       coverUrl: true,
       score: true,
-      tier: true,
       rank: true,
       releaseYear: true,
       shortBlurb: true,
@@ -51,8 +50,6 @@ export default async function RankedPage() {
 
       <div className="space-y-2">
         {albums.map((album, index) => {
-          const tier = album.tier || (album.score ? scoreToTier(album.score) : null);
-          const tierColor = tier ? getTierColor(tier) : null;
           const rank = album.rank ?? index + 1;
           const isTop3 = rank <= 3;
 
@@ -137,20 +134,8 @@ export default async function RankedPage() {
                 ))}
               </div>
 
-              {/* Score + Tier */}
+              {/* Score */}
               <div className="flex items-center gap-3 flex-shrink-0">
-                {tier && (
-                  <span
-                    className="text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center"
-                    style={{
-                      backgroundColor: (tierColor ?? "#fff") + "22",
-                      color: tierColor ?? "#fff",
-                      border: `1px solid ${tierColor ?? "#fff"}44`,
-                    }}
-                  >
-                    {tier}
-                  </span>
-                )}
                 {album.score && (
                   <span className="text-lg font-bold text-white w-10 text-right">
                     {album.score.toFixed(1)}

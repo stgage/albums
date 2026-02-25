@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn, scoreToTier, getTierColor } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Search, SlidersHorizontal, Disc3, X, LayoutGrid, List } from "lucide-react";
 
 type Album = {
@@ -13,7 +13,6 @@ type Album = {
   artist: string;
   coverUrl: string | null;
   score: number | null;
-  tier: string | null;
   releaseYear: number | null;
   userGenreTags: string[];
   moodTags: string[];
@@ -30,7 +29,6 @@ type ViewMode = "grid" | "list";
 export function BrowseGrid({ albums }: { albums: Album[] }) {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("recent");
-  const [filterTier, setFilterTier] = useState<string | null>(null);
   const [filterGenre, setFilterGenre] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
@@ -39,8 +37,6 @@ export function BrowseGrid({ albums }: { albums: Album[] }) {
     albums.forEach((a) => a.userGenreTags.forEach((g) => genres.add(g)));
     return Array.from(genres).sort();
   }, [albums]);
-
-  const tiers = ["S", "A", "B", "C", "D", "F"];
 
   const filtered = useMemo(() => {
     let result = [...albums];
@@ -52,13 +48,6 @@ export function BrowseGrid({ albums }: { albums: Album[] }) {
           a.title.toLowerCase().includes(q) ||
           a.artist.toLowerCase().includes(q)
       );
-    }
-
-    if (filterTier) {
-      result = result.filter((a) => {
-        const t = a.tier || (a.score ? scoreToTier(a.score) : null);
-        return t === filterTier;
-      });
     }
 
     if (filterGenre) {
@@ -84,7 +73,7 @@ export function BrowseGrid({ albums }: { albums: Album[] }) {
     });
 
     return result;
-  }, [albums, search, sortBy, filterTier, filterGenre]);
+  }, [albums, search, sortBy, filterGenre]);
 
   return (
     <div>
@@ -145,41 +134,6 @@ export function BrowseGrid({ albums }: { albums: Album[] }) {
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Tier filter chips */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <button
-          onClick={() => setFilterTier(null)}
-          className={cn(
-            "px-3 py-1 rounded-full text-xs font-medium transition-colors border",
-            !filterTier
-              ? "bg-white/10 border-white/20 text-white"
-              : "border-white/8 text-zinc-500 hover:text-zinc-300"
-          )}
-        >
-          All Tiers
-        </button>
-        {tiers.map((tier) => {
-          const color = getTierColor(tier);
-          return (
-            <button
-              key={tier}
-              onClick={() => setFilterTier(filterTier === tier ? null : tier)}
-              className={cn(
-                "px-3 py-1 rounded-full text-xs font-bold transition-all border",
-                filterTier === tier ? "opacity-100" : "opacity-60 hover:opacity-90"
-              )}
-              style={{
-                borderColor: color + "66",
-                color: color,
-                backgroundColor: filterTier === tier ? color + "22" : "transparent",
-              }}
-            >
-              {tier}
-            </button>
-          );
-        })}
       </div>
 
       {/* Genre filter */}
@@ -251,9 +205,6 @@ export function BrowseGrid({ albums }: { albums: Album[] }) {
 }
 
 function AlbumCard({ album }: { album: Album }) {
-  const tier = album.tier || (album.score ? scoreToTier(album.score) : null);
-  const tierColor = tier ? getTierColor(tier) : null;
-
   return (
     <motion.div
       layout
@@ -278,18 +229,6 @@ function AlbumCard({ album }: { album: Album }) {
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          {tier && (
-            <div
-              className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-              style={{
-                backgroundColor: (tierColor ?? "#fff") + "33",
-                color: tierColor ?? "#fff",
-                border: `1px solid ${tierColor ?? "#fff"}55`,
-              }}
-            >
-              {tier}
-            </div>
-          )}
           {album.rank && (
             <div className="absolute bottom-2 left-2 text-xs font-bold text-white/60">
               #{album.rank}
@@ -309,9 +248,6 @@ function AlbumCard({ album }: { album: Album }) {
 }
 
 function AlbumRow({ album, index }: { album: Album; index: number }) {
-  const tier = album.tier || (album.score ? scoreToTier(album.score) : null);
-  const tierColor = tier ? getTierColor(tier) : null;
-
   return (
     <motion.div
       layout
@@ -361,17 +297,6 @@ function AlbumRow({ album, index }: { album: Album; index: number }) {
             {tag}
           </span>
         ))}
-        {tier && (
-          <span
-            className="text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{
-              backgroundColor: (tierColor ?? "#fff") + "22",
-              color: tierColor ?? "#fff",
-            }}
-          >
-            {tier}
-          </span>
-        )}
         {album.score && (
           <span className="text-sm font-semibold text-zinc-300 w-8 text-right flex-shrink-0">
             {album.score.toFixed(1)}

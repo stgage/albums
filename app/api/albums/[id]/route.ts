@@ -30,7 +30,6 @@ export async function PATCH(req: Request, { params }: Params) {
       releaseYear: body.releaseYear ?? undefined,
       spotifyId: body.spotifyId ?? undefined,
       score: body.score ?? null,
-      tier: body.tier ?? null,
       rank: body.rank ?? null,
       status: body.status ?? undefined,
       shortBlurb: body.shortBlurb ?? null,

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import { cn, scoreToTier, getTierColor } from "@/lib/utils";
-import { ArrowRight, Disc3, Star, TrendingUp, BookOpen } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ArrowRight, Disc3, Star, TrendingUp } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ async function getHomeData() {
   const yearStart = new Date(currentYear, 0, 1);
   const yearEnd = new Date(currentYear + 1, 0, 1);
 
-  const [recentAlbums, topAlbums, totalCount, queueCount, avgScoreResult, thisYearCount] = await Promise.all([
+  const [recentAlbums, topAlbums, totalCount, avgScoreResult, thisYearCount] = await Promise.all([
     prisma.album.findMany({
       where: { status: "reviewed" },
       orderBy: { createdAt: "desc" },
@@ -22,7 +22,6 @@ async function getHomeData() {
         artist: true,
         coverUrl: true,
         score: true,
-        tier: true,
         dominantColor: true,
       },
     }),
@@ -41,7 +40,6 @@ async function getHomeData() {
       },
     }),
     prisma.album.count({ where: { status: "reviewed" } }),
-    prisma.album.count({ where: { status: "want_to_listen" } }),
     prisma.album.aggregate({
       _avg: { score: true },
       where: { status: "reviewed", score: { not: null } },
@@ -56,11 +54,11 @@ async function getHomeData() {
 
   const avgScore = avgScoreResult._avg.score;
 
-  return { recentAlbums, topAlbums, totalCount, queueCount, avgScore, thisYearCount };
+  return { recentAlbums, topAlbums, totalCount, avgScore, thisYearCount };
 }
 
 export default async function HomePage() {
-  const { recentAlbums, topAlbums, totalCount, queueCount, avgScore, thisYearCount } = await getHomeData();
+  const { recentAlbums, topAlbums, totalCount, avgScore, thisYearCount } = await getHomeData();
   const featuredAlbum = topAlbums[0];
 
   return (
@@ -168,12 +166,11 @@ export default async function HomePage() {
 
       {/* Stats Row */}
       <section className="border-y border-white/5 bg-surface-1">
-        <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-2 md:grid-cols-3 gap-6">
           {[
             { icon: Disc3, label: "Albums Reviewed", value: totalCount },
             { icon: Star, label: "Average Score", value: avgScore ? avgScore.toFixed(1) : "—" },
             { icon: TrendingUp, label: "This Year", value: thisYearCount },
-            { icon: BookOpen, label: "Want to Listen", value: queueCount },
           ].map((stat) => {
             const Icon = stat.icon;
             return (
@@ -212,8 +209,6 @@ export default async function HomePage() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {recentAlbums.map((album) => {
-              const tier = album.tier || (album.score ? scoreToTier(album.score) : null);
-              const tierColor = tier ? getTierColor(tier) : null;
               return (
                 <Link
                   key={album.id}
@@ -235,18 +230,6 @@ export default async function HomePage() {
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    {tier && (
-                      <div
-                        className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-lg"
-                        style={{
-                          backgroundColor: tierColor + "33",
-                          color: tierColor ?? "#fff",
-                          border: `1px solid ${tierColor}66`,
-                        }}
-                      >
-                        {tier}
-                      </div>
-                    )}
                   </div>
                   <p className="text-sm font-medium text-white truncate group-hover:text-purple-300 transition-colors">
                     {album.title}
@@ -272,14 +255,14 @@ export default async function HomePage() {
             Explore the full collection
           </h2>
           <p className="relative text-zinc-400 mb-8 max-w-md mx-auto">
-            Dive deep into rankings, tier lists, stats, and every album ever reviewed.
+            Dive deep into rankings, stats, and every album ever reviewed.
           </p>
           <div className="relative flex flex-wrap justify-center gap-3">
             <Link
-              href="/tiers"
+              href="/ranked"
               className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-xl transition-colors"
             >
-              View Tier List
+              Browse Rankings
             </Link>
             <Link
               href="/stats"

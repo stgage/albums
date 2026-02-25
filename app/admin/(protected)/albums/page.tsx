@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import Image from "next/image";
-import { getTierColor, scoreToTier } from "@/lib/utils";
+
 import { Disc3, Edit, Plus } from "lucide-react";
 import { format } from "date-fns";
 import type { Metadata } from "next";
@@ -18,7 +18,6 @@ async function getAlbums() {
       artist: true,
       coverUrl: true,
       score: true,
-      tier: true,
       status: true,
       rank: true,
       updatedAt: true,
@@ -47,10 +46,6 @@ export default async function ManageAlbumsPage() {
 
       <div className="space-y-2">
         {albums.map((album) => {
-          const tier =
-            album.tier || (album.score ? scoreToTier(album.score) : null);
-          const tierColor = tier ? getTierColor(tier) : null;
-
           return (
             <div
               key={album.id}
@@ -85,17 +80,6 @@ export default async function ManageAlbumsPage() {
               {album.rank && (
                 <span className="text-xs text-zinc-500 hidden md:block">
                   #{album.rank}
-                </span>
-              )}
-              {tier && (
-                <span
-                  className="text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{
-                    backgroundColor: (tierColor ?? "#fff") + "22",
-                    color: tierColor ?? "#fff",
-                  }}
-                >
-                  {tier}
                 </span>
               )}
               {album.score && (

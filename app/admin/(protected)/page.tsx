@@ -1,14 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Disc3, ListOrdered, BarChart3, BookmarkPlus } from "lucide-react";
+import { Plus, Disc3, ListOrdered, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 
 async function getDashboardData() {
-  const [totalAlbums, reviewed, queue, recent] = await Promise.all([
+  const [totalAlbums, reviewed, recent] = await Promise.all([
     prisma.album.count(),
     prisma.album.count({ where: { status: "reviewed" } }),
-    prisma.album.count({ where: { status: "want_to_listen" } }),
     prisma.album.findMany({
       orderBy: { updatedAt: "desc" },
       take: 8,
@@ -24,11 +23,11 @@ async function getDashboardData() {
     }),
   ]);
 
-  return { totalAlbums, reviewed, queue, recent };
+  return { totalAlbums, reviewed, recent };
 }
 
 export default async function AdminPage() {
-  const { totalAlbums, reviewed, queue, recent } = await getDashboardData();
+  const { totalAlbums, reviewed, recent } = await getDashboardData();
 
   return (
     <div className="p-8">
@@ -38,12 +37,11 @@ export default async function AdminPage() {
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
         {[
           { icon: Disc3, label: "Total Albums", value: totalAlbums, color: "purple" },
           { icon: BarChart3, label: "Reviewed", value: reviewed, color: "green" },
-          { icon: BookmarkPlus, label: "In Queue", value: queue, color: "blue" },
-          { icon: ListOrdered, label: "Unranked", value: reviewed - 0, color: "orange" },
+          { icon: ListOrdered, label: "Unranked", value: reviewed, color: "orange" },
         ].map((stat) => {
           const Icon = stat.icon;
           return (
@@ -136,8 +134,6 @@ export default async function AdminPage() {
                 className={`text-xs px-2 py-0.5 rounded-full ${
                   album.status === "reviewed"
                     ? "bg-green-500/10 text-green-400"
-                    : album.status === "want_to_listen"
-                    ? "bg-blue-500/10 text-blue-400"
                     : "bg-zinc-500/10 text-zinc-400"
                 }`}
               >

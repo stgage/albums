@@ -70,7 +70,6 @@ export async function POST(req: Request) {
       spotifyGenres: spotifyData.spotifyGenres ?? [],
       tracks: spotifyData.tracks ?? undefined,
       score: body.score ?? null,
-      tier: body.tier ?? null,
       rank: body.rank ?? null,
       status: body.status ?? "reviewed",
       shortBlurb: body.shortBlurb ?? null,

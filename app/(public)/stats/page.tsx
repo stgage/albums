@@ -13,14 +13,12 @@ async function getStats() {
   const [
     allAlbums,
     totalReviewed,
-    totalWantToListen,
     avgScore,
   ] = await Promise.all([
     prisma.album.findMany({
       where: { status: "reviewed" },
       select: {
         score: true,
-        tier: true,
         releaseYear: true,
         userGenreTags: true,
         moodTags: true,
@@ -29,7 +27,6 @@ async function getStats() {
       },
     }),
     prisma.album.count({ where: { status: "reviewed" } }),
-    prisma.album.count({ where: { status: "want_to_listen" } }),
     prisma.album.aggregate({
       where: { status: "reviewed", score: { not: null } },
       _avg: { score: true },
@@ -97,7 +94,6 @@ async function getStats() {
 
   return {
     totalReviewed,
-    totalWantToListen,
     avgScore: avgScore._avg.score ?? 0,
     scoreDistribution,
     albumsPerYear,
@@ -120,11 +116,10 @@ export default async function StatsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12">
         {[
           { label: "Albums Reviewed", value: stats.totalReviewed },
           { label: "Average Score", value: stats.avgScore.toFixed(2) },
-          { label: "Want to Listen", value: stats.totalWantToListen },
           {
             label: "Years Covered",
             value: stats.albumsPerYear.length > 0

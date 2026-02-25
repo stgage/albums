@@ -25,7 +25,6 @@ type Album = {
   releaseYear: number | null;
   trackCount: number | null;
   score: number | null;
-  tier: string | null;
   rank: number | null;
   status: string;
   shortBlurb: string | null;
@@ -57,7 +56,6 @@ export function AlbumForm({ album }: { album?: Album }) {
   const [releaseYear, setReleaseYear] = useState(album?.releaseYear?.toString() ?? "");
   const [spotifyId, setSpotifyId] = useState(album?.spotifyId ?? "");
   const [score, setScore] = useState(album?.score?.toString() ?? "");
-  const [tier, setTier] = useState(album?.tier ?? "");
   const [rank, setRank] = useState(album?.rank?.toString() ?? "");
   const [status, setStatus] = useState(album?.status ?? "reviewed");
   const [shortBlurb, setShortBlurb] = useState(album?.shortBlurb ?? "");
@@ -106,7 +104,6 @@ export function AlbumForm({ album }: { album?: Album }) {
         releaseYear: releaseYear ? parseInt(releaseYear) : null,
         spotifyId: spotifyId || null,
         score: score ? parseFloat(score) : null,
-        tier: tier || null,
         rank: rank ? parseInt(rank) : null,
         status,
         shortBlurb: shortBlurb || null,
@@ -146,8 +143,7 @@ export function AlbumForm({ album }: { album?: Album }) {
     router.push("/admin/albums");
   }
 
-  const TIERS = ["S", "A", "B", "C", "D", "F"];
-  const STATUSES = ["reviewed", "want_to_listen", "listening", "archived"];
+  const STATUSES = ["reviewed", "listening", "archived"];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -300,7 +296,7 @@ export function AlbumForm({ album }: { album?: Album }) {
         <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
           Scoring
         </h2>
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 gap-4">
           <Field label="Score (0–10)">
             <input
               type="number"
@@ -322,37 +318,6 @@ export function AlbumForm({ album }: { album?: Album }) {
               className={inputClass}
               placeholder="1"
             />
-          </Field>
-          <Field label="Tier Override">
-            <div className="flex gap-1.5">
-              <button
-                type="button"
-                onClick={() => setTier("")}
-                className={cn(
-                  "flex-1 py-2 text-xs font-medium rounded-lg border transition-colors",
-                  !tier
-                    ? "bg-white/10 border-white/20 text-white"
-                    : "border-white/8 text-zinc-500 hover:text-zinc-300"
-                )}
-              >
-                Auto
-              </button>
-              {TIERS.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTier(t)}
-                  className={cn(
-                    "flex-1 py-2 text-xs font-bold rounded-lg border transition-colors",
-                    tier === t
-                      ? "bg-white/10 border-white/20 text-white"
-                      : "border-white/8 text-zinc-500 hover:text-zinc-300"
-                  )}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
           </Field>
         </div>
       </div>
