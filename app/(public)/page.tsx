@@ -7,7 +7,11 @@ import { ArrowRight, Disc3, Star, TrendingUp, BookOpen } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 async function getHomeData() {
-  const [recentAlbums, topAlbums, totalCount, queueCount] = await Promise.all([
+  const currentYear = new Date().getFullYear();
+  const yearStart = new Date(currentYear, 0, 1);
+  const yearEnd = new Date(currentYear + 1, 0, 1);
+
+  const [recentAlbums, topAlbums, totalCount, queueCount, avgScoreResult, thisYearCount] = await Promise.all([
     prisma.album.findMany({
       where: { status: "reviewed" },
       orderBy: { createdAt: "desc" },
@@ -38,13 +42,25 @@ async function getHomeData() {
     }),
     prisma.album.count({ where: { status: "reviewed" } }),
     prisma.album.count({ where: { status: "want_to_listen" } }),
+    prisma.album.aggregate({
+      _avg: { score: true },
+      where: { status: "reviewed", score: { not: null } },
+    }),
+    prisma.album.count({
+      where: {
+        status: "reviewed",
+        listenDate: { gte: yearStart, lt: yearEnd },
+      },
+    }),
   ]);
 
-  return { recentAlbums, topAlbums, totalCount, queueCount };
+  const avgScore = avgScoreResult._avg.score;
+
+  return { recentAlbums, topAlbums, totalCount, queueCount, avgScore, thisYearCount };
 }
 
 export default async function HomePage() {
-  const { recentAlbums, topAlbums, totalCount, queueCount } = await getHomeData();
+  const { recentAlbums, topAlbums, totalCount, queueCount, avgScore, thisYearCount } = await getHomeData();
   const featuredAlbum = topAlbums[0];
 
   return (
@@ -155,8 +171,8 @@ export default async function HomePage() {
         <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-2 md:grid-cols-4 gap-6">
           {[
             { icon: Disc3, label: "Albums Reviewed", value: totalCount },
-            { icon: Star, label: "Average Score", value: "8.2" },
-            { icon: TrendingUp, label: "This Year", value: "12" },
+            { icon: Star, label: "Average Score", value: avgScore ? avgScore.toFixed(1) : "—" },
+            { icon: TrendingUp, label: "This Year", value: thisYearCount },
             { icon: BookOpen, label: "Want to Listen", value: queueCount },
           ].map((stat) => {
             const Icon = stat.icon;
