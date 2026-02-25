@@ -4,29 +4,22 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Browse",
-  description: "Browse all albums in Sam's collection",
+  description: "Browse all albums in the library",
 };
 
 export const dynamic = "force-dynamic";
 
 async function getAllAlbums() {
   return prisma.album.findMany({
-    where: { status: { in: ["reviewed", "listening"] } },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
       title: true,
       artist: true,
       coverUrl: true,
-      score: true,
       releaseYear: true,
-      userGenreTags: true,
-      moodTags: true,
-      status: true,
-      shortBlurb: true,
+      spotifyGenres: true,
       dominantColor: true,
-      listenDate: true,
-      rank: true,
     },
   });
 }

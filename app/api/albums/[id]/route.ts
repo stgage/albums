@@ -8,7 +8,6 @@ export async function GET(_req: Request, { params }: Params) {
   const { id } = await params;
   const album = await prisma.album.findUnique({
     where: { id },
-    include: { relistens: true, rankHistory: true },
   });
   if (!album) return new NextResponse("Not found", { status: 404 });
   return NextResponse.json(album);
@@ -21,6 +20,8 @@ export async function PATCH(req: Request, { params }: Params) {
   const { id } = await params;
   const body = await req.json();
 
+  // Only canonical album metadata can be updated here; user-specific
+  // data (score, rank, review, etc.) lives in UserAlbum
   const album = await prisma.album.update({
     where: { id },
     data: {
@@ -29,15 +30,6 @@ export async function PATCH(req: Request, { params }: Params) {
       coverUrl: body.coverUrl ?? undefined,
       releaseYear: body.releaseYear ?? undefined,
       spotifyId: body.spotifyId ?? undefined,
-      score: body.score ?? null,
-      rank: body.rank ?? null,
-      status: body.status ?? undefined,
-      shortBlurb: body.shortBlurb ?? null,
-      review: body.review ?? null,
-      listenDate: body.listenDate ? new Date(body.listenDate) : null,
-      moodTags: body.moodTags ?? undefined,
-      userGenreTags: body.userGenreTags ?? undefined,
-      favoriteTracks: body.favoriteTracks ?? undefined,
     },
   });
 

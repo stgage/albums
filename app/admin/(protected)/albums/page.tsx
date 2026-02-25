@@ -17,9 +17,8 @@ async function getAlbums() {
       title: true,
       artist: true,
       coverUrl: true,
-      score: true,
-      status: true,
-      rank: true,
+      releaseYear: true,
+      trackCount: true,
       updatedAt: true,
     },
   });
@@ -33,7 +32,7 @@ export default async function ManageAlbumsPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-serif text-3xl font-bold text-white">Albums</h1>
-          <p className="text-zinc-500 mt-1">{albums.length} total</p>
+          <p className="text-zinc-500 mt-1">{albums.length} in library</p>
         </div>
         <Link
           href="/admin/albums/new"
@@ -68,23 +67,14 @@ export default async function ManageAlbumsPage() {
                 </p>
                 <p className="text-xs text-zinc-500 truncate">{album.artist}</p>
               </div>
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full hidden md:block ${
-                  album.status === "reviewed"
-                    ? "bg-green-500/10 text-green-400"
-                    : "bg-zinc-500/10 text-zinc-400"
-                }`}
-              >
-                {album.status}
-              </span>
-              {album.rank && (
+              {album.releaseYear && (
                 <span className="text-xs text-zinc-500 hidden md:block">
-                  #{album.rank}
+                  {album.releaseYear}
                 </span>
               )}
-              {album.score && (
-                <span className="text-sm font-semibold text-zinc-300 w-8 text-right">
-                  {album.score.toFixed(1)}
+              {album.trackCount && (
+                <span className="text-xs text-zinc-600 hidden md:block">
+                  {album.trackCount} tracks
                 </span>
               )}
               <span className="text-xs text-zinc-600 hidden lg:block w-14 text-right">
@@ -100,6 +90,20 @@ export default async function ManageAlbumsPage() {
           );
         })}
       </div>
+
+      {albums.length === 0 && (
+        <div className="text-center py-24">
+          <Disc3 className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+          <p className="text-zinc-500 mb-4">No albums in library yet</p>
+          <Link
+            href="/admin/albums/new"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm rounded-xl transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add First Album
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

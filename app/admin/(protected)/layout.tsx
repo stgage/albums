@@ -17,7 +17,9 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
-  if (!session) redirect("/admin/login");
+  if (!session) redirect("/login");
+  // @ts-expect-error — custom session field
+  if (!session.user?.isAdmin) redirect("/");
 
   return (
     <div className="min-h-screen bg-surface flex">
@@ -59,7 +61,7 @@ export default async function AdminLayout({
           <form
             action={async () => {
               "use server";
-              await signOut({ redirectTo: "/admin/login" });
+              await signOut({ redirectTo: "/" });
             }}
           >
             <button

@@ -5,9 +5,8 @@ import { Plus, Disc3, ListOrdered, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 
 async function getDashboardData() {
-  const [totalAlbums, reviewed, recent] = await Promise.all([
+  const [totalAlbums, recent] = await Promise.all([
     prisma.album.count(),
-    prisma.album.count({ where: { status: "reviewed" } }),
     prisma.album.findMany({
       orderBy: { updatedAt: "desc" },
       take: 8,
@@ -16,32 +15,30 @@ async function getDashboardData() {
         title: true,
         artist: true,
         coverUrl: true,
-        score: true,
-        status: true,
         updatedAt: true,
       },
     }),
   ]);
 
-  return { totalAlbums, reviewed, recent };
+  return { totalAlbums, recent };
 }
 
 export default async function AdminPage() {
-  const { totalAlbums, reviewed, recent } = await getDashboardData();
+  const { totalAlbums, recent } = await getDashboardData();
 
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="font-serif text-3xl font-bold text-white">Dashboard</h1>
-        <p className="text-zinc-500 mt-1">Manage your album collection</p>
+        <p className="text-zinc-500 mt-1">Manage canonical album metadata</p>
       </div>
 
       {/* Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
         {[
           { icon: Disc3, label: "Total Albums", value: totalAlbums, color: "purple" },
-          { icon: BarChart3, label: "Reviewed", value: reviewed, color: "green" },
-          { icon: ListOrdered, label: "Unranked", value: reviewed, color: "orange" },
+          { icon: BarChart3, label: "In Library", value: totalAlbums, color: "green" },
+          { icon: ListOrdered, label: "Users", value: "—", color: "orange" },
         ].map((stat) => {
           const Icon = stat.icon;
           return (
@@ -62,7 +59,7 @@ export default async function AdminPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="grid md:grid-cols-3 gap-4 mb-8">
+      <div className="grid md:grid-cols-2 gap-4 mb-8">
         <Link
           href="/admin/albums/new"
           className="flex items-center gap-3 p-4 rounded-xl bg-purple-600/20 border border-purple-500/30 hover:bg-purple-600/30 transition-colors group"
@@ -72,19 +69,7 @@ export default async function AdminPage() {
           </div>
           <div>
             <p className="font-medium text-white">Add New Album</p>
-            <p className="text-xs text-zinc-500">Search Spotify and review</p>
-          </div>
-        </Link>
-        <Link
-          href="/admin/rankings"
-          className="flex items-center gap-3 p-4 rounded-xl glass glass-hover transition-colors group"
-        >
-          <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">
-            <ListOrdered className="w-5 h-5 text-zinc-400" />
-          </div>
-          <div>
-            <p className="font-medium text-white">Edit Rankings</p>
-            <p className="text-xs text-zinc-500">Drag to reorder</p>
+            <p className="text-xs text-zinc-500">Search Spotify and add to library</p>
           </div>
         </Link>
         <Link
@@ -96,7 +81,7 @@ export default async function AdminPage() {
           </div>
           <div>
             <p className="font-medium text-white">Manage Albums</p>
-            <p className="text-xs text-zinc-500">Edit or delete reviews</p>
+            <p className="text-xs text-zinc-500">Edit canonical album metadata</p>
           </div>
         </Link>
       </div>
@@ -130,20 +115,6 @@ export default async function AdminPage() {
                 </p>
                 <p className="text-xs text-zinc-500 truncate">{album.artist}</p>
               </div>
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full ${
-                  album.status === "reviewed"
-                    ? "bg-green-500/10 text-green-400"
-                    : "bg-zinc-500/10 text-zinc-400"
-                }`}
-              >
-                {album.status.replace(/_/g, " ")}
-              </span>
-              {album.score && (
-                <span className="text-sm font-semibold text-zinc-300 w-8 text-right">
-                  {album.score.toFixed(1)}
-                </span>
-              )}
               <span className="text-xs text-zinc-600 hidden md:block w-20 text-right">
                 {format(new Date(album.updatedAt), "MMM d")}
               </span>

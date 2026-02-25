@@ -15,7 +15,6 @@ export default async function EditAlbumPage({ params }: Props) {
   const { id } = await params;
   const album = await prisma.album.findUnique({
     where: { id },
-    include: { relistens: { orderBy: { date: "desc" } } },
   });
 
   if (!album) notFound();

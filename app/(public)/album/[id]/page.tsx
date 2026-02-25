@@ -3,8 +3,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { formatDuration, formatTrackDuration } from "@/lib/utils";
-import { Calendar, Clock, Disc3, Music, ArrowLeft, RotateCcw, Heart } from "lucide-react";
-import { format } from "date-fns";
+import { Clock, Disc3, Music, ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 
 type Props = { params: Promise<{ id: string }> };
@@ -13,8 +12,18 @@ async function getAlbum(id: string) {
   return prisma.album.findUnique({
     where: { id },
     include: {
-      relistens: { orderBy: { date: "desc" } },
-      rankHistory: { orderBy: { createdAt: "desc" }, take: 10 },
+      userAlbums: {
+        where: { rank: { not: null } },
+        select: {
+          userId: true,
+          rank: true,
+          score: true,
+          shortBlurb: true,
+          review: true,
+          user: { select: { username: true, name: true } },
+        },
+        orderBy: { rank: "asc" },
+      },
     },
   });
 }
@@ -25,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!album) return { title: "Album Not Found" };
   return {
     title: `${album.title} — ${album.artist}`,
-    description: album.shortBlurb ?? `${album.title} by ${album.artist}, reviewed by Sam`,
+    description: `${album.title} by ${album.artist}`,
   };
 }
 
@@ -41,12 +50,11 @@ export default async function AlbumPage({ params }: Props) {
     name: string;
     duration_ms: number;
     track_number: number;
-    artists: { name: string }[];
   }> | null;
 
   return (
     <div className="min-h-screen">
-      {/* Hero banner with album color */}
+      {/* Hero banner */}
       <div
         className="relative h-[50vh] min-h-[380px]"
         style={{
@@ -122,61 +130,47 @@ export default async function AlbumPage({ params }: Props) {
         <div className="grid md:grid-cols-3 gap-8">
           {/* Main content */}
           <div className="md:col-span-2 space-y-8">
-            {/* Score */}
-            {album.score && (
-              <div className="flex items-center gap-4">
-                <div>
-                  <p className="text-5xl font-serif font-bold text-white">
-                    {album.score.toFixed(1)}
-                  </p>
-                  <p className="text-xs text-zinc-500 mt-0.5">out of 10</p>
-                </div>
-                {album.rank && (
-                  <div className="text-zinc-400">
-                    <p className="text-lg font-semibold text-white">
-                      #{album.rank}
-                    </p>
-                    <p className="text-xs">all-time rank</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Short blurb */}
-            {album.shortBlurb && (
-              <p className="text-lg text-zinc-300 leading-relaxed italic border-l-4 border-purple-500/50 pl-4">
-                &ldquo;{album.shortBlurb}&rdquo;
-              </p>
-            )}
-
-            {/* Full review */}
-            {album.review && (
+            {/* Community reviews */}
+            {album.userAlbums.length > 0 && (
               <div>
                 <h2 className="font-serif text-xl font-bold text-white mb-4">
-                  Review
+                  Community Reviews
                 </h2>
-                <div
-                  className="prose prose-invert max-w-none text-zinc-300 leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: album.review }}
-                />
-              </div>
-            )}
-
-            {/* Favorite tracks */}
-            {album.favoriteTracks.length > 0 && (
-              <div>
-                <h2 className="font-serif text-xl font-bold text-white mb-3 flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-red-400" />
-                  Favorite Tracks
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {album.favoriteTracks.map((track) => (
-                    <span
-                      key={track}
-                      className="px-3 py-1.5 bg-red-500/10 border border-red-500/20 text-red-300 text-sm rounded-lg"
+                <div className="space-y-4">
+                  {album.userAlbums.map((ua) => (
+                    <div
+                      key={ua.userId}
+                      className="p-4 rounded-xl glass border border-white/5"
                     >
-                      {track}
-                    </span>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-purple-600/30 flex items-center justify-center text-purple-300 text-xs font-bold">
+                          {ua.user.name?.[0] ?? ua.user.username?.[0] ?? "?"}
+                        </div>
+                        <div>
+                          <Link
+                            href={`/u/${ua.user.username ?? ""}`}
+                            className="text-sm font-medium text-white hover:text-purple-300 transition-colors"
+                          >
+                            {ua.user.name ?? ua.user.username}
+                          </Link>
+                          <div className="flex items-center gap-2 text-xs text-zinc-500">
+                            {ua.rank && <span>Ranked #{ua.rank}</span>}
+                            {ua.score && <span>· {ua.score.toFixed(1)}/10</span>}
+                          </div>
+                        </div>
+                      </div>
+                      {ua.shortBlurb && (
+                        <p className="text-sm text-zinc-300 italic">
+                          &ldquo;{ua.shortBlurb}&rdquo;
+                        </p>
+                      )}
+                      {ua.review && (
+                        <div
+                          className="text-sm text-zinc-400 mt-2 prose prose-invert max-w-none"
+                          dangerouslySetInnerHTML={{ __html: ua.review }}
+                        />
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -189,58 +183,20 @@ export default async function AlbumPage({ params }: Props) {
                   Tracklist
                 </h2>
                 <div className="space-y-1">
-                  {tracks.map((track) => {
-                    const isFav = album.favoriteTracks.includes(track.name);
-                    return (
-                      <div
-                        key={track.id}
-                        className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-white/5 transition-colors group"
-                      >
-                        <span className="text-xs text-zinc-600 font-mono w-5 text-right">
-                          {track.track_number}
-                        </span>
-                        <span
-                          className={`flex-1 text-sm ${isFav ? "text-white font-medium" : "text-zinc-300"}`}
-                        >
-                          {track.name}
-                          {isFav && (
-                            <Heart className="inline w-3 h-3 text-red-400 ml-1.5 mb-0.5" />
-                          )}
-                        </span>
-                        <span className="text-xs text-zinc-600 font-mono">
-                          {formatTrackDuration(track.duration_ms)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Relistens */}
-            {album.relistens.length > 0 && (
-              <div>
-                <h2 className="font-serif text-xl font-bold text-white mb-4 flex items-center gap-2">
-                  <RotateCcw className="w-5 h-5 text-purple-400" />
-                  Relistens
-                </h2>
-                <div className="space-y-3">
-                  {album.relistens.map((relisten) => (
+                  {tracks.map((track) => (
                     <div
-                      key={relisten.id}
-                      className="flex items-start gap-3 p-3 rounded-xl bg-surface-1 border border-white/5"
+                      key={track.id}
+                      className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-white/5 transition-colors"
                     >
-                      <Calendar className="w-4 h-4 text-zinc-500 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm text-zinc-300">
-                          {format(new Date(relisten.date), "MMMM d, yyyy")}
-                        </p>
-                        {relisten.notes && (
-                          <p className="text-xs text-zinc-500 mt-1">
-                            {relisten.notes}
-                          </p>
-                        )}
-                      </div>
+                      <span className="text-xs text-zinc-600 font-mono w-5 text-right">
+                        {track.track_number}
+                      </span>
+                      <span className="flex-1 text-sm text-zinc-300">
+                        {track.name}
+                      </span>
+                      <span className="text-xs text-zinc-600 font-mono">
+                        {formatTrackDuration(track.duration_ms)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -256,15 +212,6 @@ export default async function AlbumPage({ params }: Props) {
                 Details
               </h3>
 
-              {album.listenDate && (
-                <div>
-                  <p className="text-xs text-zinc-500 mb-1">First Listened</p>
-                  <p className="text-sm text-zinc-200">
-                    {format(new Date(album.listenDate), "MMMM d, yyyy")}
-                  </p>
-                </div>
-              )}
-
               {album.releaseYear && (
                 <div>
                   <p className="text-xs text-zinc-500 mb-1">Released</p>
@@ -272,38 +219,11 @@ export default async function AlbumPage({ params }: Props) {
                 </div>
               )}
 
-              {(album.userGenreTags.length > 0 || album.spotifyGenres.length > 0) && (
+              {album.spotifyGenres.length > 0 && (
                 <div>
                   <p className="text-xs text-zinc-500 mb-2">Genres</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {album.userGenreTags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-xs px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/20"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                    {album.spotifyGenres
-                      .filter((g) => !album.userGenreTags.includes(g))
-                      .slice(0, 3)
-                      .map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-zinc-400"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                  </div>
-                </div>
-              )}
-
-              {album.moodTags.length > 0 && (
-                <div>
-                  <p className="text-xs text-zinc-500 mb-2">Mood / Vibe</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {album.moodTags.map((tag) => (
+                    {album.spotifyGenres.slice(0, 6).map((tag) => (
                       <span
                         key={tag}
                         className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-zinc-400"
@@ -334,63 +254,8 @@ export default async function AlbumPage({ params }: Props) {
                 </div>
               </div>
             )}
-
-            {/* Similar albums */}
-            {album.similarAlbums.length > 0 && (
-              <SimilarAlbums ids={album.similarAlbums} />
-            )}
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-async function SimilarAlbums({ ids }: { ids: string[] }) {
-  const albums = await prisma.album.findMany({
-    where: { id: { in: ids } },
-    select: {
-      id: true,
-      title: true,
-      artist: true,
-      coverUrl: true,
-    },
-    take: 4,
-  });
-
-  if (albums.length === 0) return null;
-
-  return (
-    <div className="glass rounded-2xl p-5">
-      <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">
-        Similar Albums
-      </h3>
-      <div className="space-y-2">
-        {albums.map((album) => (
-          <Link
-            key={album.id}
-            href={`/album/${album.id}`}
-            className="flex items-center gap-3 hover:bg-white/5 rounded-lg p-1.5 transition-colors group"
-          >
-            <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-surface-2">
-              {album.coverUrl && (
-                <Image
-                  src={album.coverUrl}
-                  alt={album.title}
-                  fill
-                  className="object-cover"
-                  sizes="40px"
-                />
-              )}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm text-white truncate group-hover:text-purple-300 transition-colors">
-                {album.title}
-              </p>
-              <p className="text-xs text-zinc-500 truncate">{album.artist}</p>
-            </div>
-          </Link>
-        ))}
       </div>
     </div>
   );

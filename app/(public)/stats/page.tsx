@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Stats",
-  description: "Stats and insights about Sam's album collection",
+  description: "Stats and insights about the album community",
 };
 
 export const dynamic = "force-dynamic";
@@ -12,50 +12,21 @@ export const dynamic = "force-dynamic";
 async function getStats() {
   const [
     allAlbums,
-    totalReviewed,
-    avgScore,
+    totalAlbums,
+    totalUsers,
+    totalRanked,
   ] = await Promise.all([
     prisma.album.findMany({
-      where: { status: "reviewed" },
       select: {
-        score: true,
         releaseYear: true,
-        userGenreTags: true,
-        moodTags: true,
-        listenDate: true,
+        spotifyGenres: true,
         artist: true,
       },
     }),
-    prisma.album.count({ where: { status: "reviewed" } }),
-    prisma.album.aggregate({
-      where: { status: "reviewed", score: { not: null } },
-      _avg: { score: true },
-    }),
+    prisma.album.count(),
+    prisma.user.count(),
+    prisma.userAlbum.count({ where: { rank: { not: null } } }),
   ]);
-
-  // Score distribution
-  const scoreDistribution = Array.from({ length: 10 }, (_, i) => {
-    const min = i + 1;
-    const max = i + 1.99;
-    return {
-      range: `${min}–${min + 1}`,
-      count: allAlbums.filter(
-        (a) => a.score !== null && a.score >= min && a.score < max + 0.01
-      ).length,
-    };
-  }).filter((d) => d.count > 0);
-
-  // Albums per year (listen date)
-  const yearCounts: Record<number, number> = {};
-  allAlbums.forEach((a) => {
-    if (a.listenDate) {
-      const year = new Date(a.listenDate).getFullYear();
-      yearCounts[year] = (yearCounts[year] ?? 0) + 1;
-    }
-  });
-  const albumsPerYear = Object.entries(yearCounts)
-    .map(([year, count]) => ({ year: parseInt(year), count }))
-    .sort((a, b) => a.year - b.year);
 
   // Release decades
   const decadeCounts: Record<string, number> = {};
@@ -69,10 +40,10 @@ async function getStats() {
     .map(([decade, count]) => ({ decade, count }))
     .sort((a, b) => a.decade.localeCompare(b.decade));
 
-  // Top genres
+  // Top Spotify genres
   const genreCounts: Record<string, number> = {};
   allAlbums.forEach((a) => {
-    a.userGenreTags.forEach((g) => {
+    a.spotifyGenres.forEach((g) => {
       genreCounts[g] = (genreCounts[g] ?? 0) + 1;
     });
   });
@@ -93,10 +64,14 @@ async function getStats() {
     .slice(0, 10);
 
   return {
-    totalReviewed,
-    avgScore: avgScore._avg.score ?? 0,
-    scoreDistribution,
-    albumsPerYear,
+    totalAlbums,
+    totalUsers,
+    totalRanked,
+    // Keep these compatible with StatsCharts (pass empty/zero for removed fields)
+    totalReviewed: totalAlbums,
+    avgScore: 0,
+    scoreDistribution: [],
+    albumsPerYear: [],
     releaseDecades,
     topGenres,
     topArtists,
@@ -118,13 +93,11 @@ export default async function StatsPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12">
         {[
-          { label: "Albums Reviewed", value: stats.totalReviewed },
-          { label: "Average Score", value: stats.avgScore.toFixed(2) },
+          { label: "Albums in Library", value: stats.totalAlbums },
+          { label: "Community Members", value: stats.totalUsers },
           {
-            label: "Years Covered",
-            value: stats.albumsPerYear.length > 0
-              ? `${stats.albumsPerYear[0]?.year}–${stats.albumsPerYear[stats.albumsPerYear.length - 1]?.year}`
-              : "—",
+            label: "Total Rankings",
+            value: stats.totalRanked,
           },
         ].map((stat) => (
           <div

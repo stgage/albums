@@ -1,57 +1,90 @@
 import { prisma } from "@/lib/prisma";
 import Image from "next/image";
 import Link from "next/link";
-
 import { Crown, Disc3 } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Ranked",
-  description: "Every album ranked from best to worst",
+  title: "Global Rankings",
+  description: "Albums ranked by the community using Borda count",
 };
 
 export const dynamic = "force-dynamic";
 
-async function getRankedAlbums() {
-  return prisma.album.findMany({
-    where: {
-      status: "reviewed",
-      score: { not: null },
-    },
-    orderBy: [{ rank: "asc" }, { score: "desc" }],
+// Normalized Borda Count algorithm:
+// For each user, normalize rank: score = 1 - (rank - 1) / max(total - 1, 1)
+// Global score = sum of all users' normalized scores
+async function getBordaRankedAlbums() {
+  const userAlbums = await prisma.userAlbum.findMany({
+    where: { rank: { not: null } },
     select: {
-      id: true,
-      title: true,
-      artist: true,
-      coverUrl: true,
-      score: true,
+      userId: true,
+      albumId: true,
       rank: true,
-      releaseYear: true,
-      shortBlurb: true,
-      dominantColor: true,
-      userGenreTags: true,
+      album: {
+        select: {
+          id: true,
+          title: true,
+          artist: true,
+          coverUrl: true,
+          dominantColor: true,
+          releaseYear: true,
+        },
+      },
     },
   });
+
+  // Group by user to get each user's total ranked count
+  const userTotals: Record<string, number> = {};
+  for (const ua of userAlbums) {
+    userTotals[ua.userId] = (userTotals[ua.userId] ?? 0) + 1;
+  }
+
+  // Compute normalized Borda scores per album
+  const bordaScores: Record<string, number> = {};
+  const albumMeta: Record<
+    string,
+    { id: string; title: string; artist: string; coverUrl: string | null; dominantColor: string | null; releaseYear: number | null; rankedByCount: number }
+  > = {};
+
+  for (const ua of userAlbums) {
+    if (ua.rank === null) continue;
+    const total = userTotals[ua.userId] ?? 1;
+    const normalized = total > 1 ? 1 - (ua.rank - 1) / (total - 1) : 1;
+    bordaScores[ua.albumId] = (bordaScores[ua.albumId] ?? 0) + normalized;
+    if (!albumMeta[ua.albumId]) {
+      albumMeta[ua.albumId] = { ...ua.album, rankedByCount: 0 };
+    }
+    albumMeta[ua.albumId].rankedByCount += 1;
+  }
+
+  // Sort by borda score descending
+  return Object.entries(bordaScores)
+    .sort(([, a], [, b]) => b - a)
+    .map(([albumId, score], index) => ({
+      ...albumMeta[albumId],
+      bordaScore: score,
+      rank: index + 1,
+    }));
 }
 
 export default async function RankedPage() {
-  const albums = await getRankedAlbums();
+  const albums = await getBordaRankedAlbums();
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       <div className="mb-10">
         <h1 className="font-serif text-4xl font-bold text-white mb-2">
-          Ranked
+          Global Rankings
         </h1>
         <p className="text-zinc-400">
-          {albums.length} albums in order from best to worst
+          {albums.length} albums ranked by the community · Borda count method
         </p>
       </div>
 
       <div className="space-y-2">
-        {albums.map((album, index) => {
-          const rank = album.rank ?? index + 1;
-          const isTop3 = rank <= 3;
+        {albums.map((album) => {
+          const isTop3 = album.rank <= 3;
 
           return (
             <Link
@@ -68,17 +101,17 @@ export default async function RankedPage() {
             >
               {/* Rank */}
               <div className="w-12 text-center flex-shrink-0">
-                {rank === 1 ? (
+                {album.rank === 1 ? (
                   <Crown className="w-6 h-6 text-yellow-400 mx-auto" />
                 ) : (
                   <span
                     className={
-                      rank <= 3
+                      album.rank <= 3
                         ? "text-xl font-serif font-bold text-zinc-300"
                         : "text-sm font-mono text-zinc-500"
                     }
                   >
-                    {rank}
+                    {album.rank}
                   </span>
                 )}
               </div>
@@ -88,9 +121,7 @@ export default async function RankedPage() {
                 className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 shadow-lg"
                 style={
                   isTop3 && album.dominantColor
-                    ? {
-                        boxShadow: `0 4px 24px ${album.dominantColor}44`,
-                      }
+                    ? { boxShadow: `0 4px 24px ${album.dominantColor}44` }
                     : undefined
                 }
               >
@@ -115,32 +146,18 @@ export default async function RankedPage() {
                   {album.title}
                 </p>
                 <p className="text-sm text-zinc-400 truncate">{album.artist}</p>
-                {album.shortBlurb && (
-                  <p className="text-xs text-zinc-600 truncate mt-0.5 hidden md:block">
-                    {album.shortBlurb}
-                  </p>
-                )}
+                <p className="text-xs text-zinc-600 mt-0.5">
+                  ranked by {album.rankedByCount}{" "}
+                  {album.rankedByCount === 1 ? "user" : "users"}
+                </p>
               </div>
 
-              {/* Tags */}
-              <div className="hidden lg:flex gap-1 flex-wrap max-w-[160px] justify-end">
-                {album.userGenreTags.slice(0, 2).map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-zinc-500"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              {/* Score */}
-              <div className="flex items-center gap-3 flex-shrink-0">
-                {album.score && (
-                  <span className="text-lg font-bold text-white w-10 text-right">
-                    {album.score.toFixed(1)}
-                  </span>
-                )}
+              {/* Borda score */}
+              <div className="flex-shrink-0 text-right">
+                <p className="text-sm font-bold text-zinc-300">
+                  {album.bordaScore.toFixed(2)}
+                </p>
+                <p className="text-xs text-zinc-600">borda</p>
               </div>
             </Link>
           );
@@ -150,7 +167,16 @@ export default async function RankedPage() {
       {albums.length === 0 && (
         <div className="text-center py-24">
           <Disc3 className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-          <p className="text-zinc-500">No ranked albums yet</p>
+          <p className="text-zinc-500 mb-2">No rankings yet</p>
+          <p className="text-zinc-600 text-sm">
+            Be the first to rank albums in your collection
+          </p>
+          <Link
+            href="/register"
+            className="mt-4 inline-flex px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm rounded-xl transition-colors"
+          >
+            Get Started
+          </Link>
         </div>
       )}
     </div>

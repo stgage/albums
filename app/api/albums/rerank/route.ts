@@ -1,24 +1,9 @@
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request) {
-  const session = await auth();
-  if (!session) return new NextResponse("Unauthorized", { status: 401 });
-
-  const { updates } = await req.json() as {
-    updates: { id: string; rank: number }[];
-  };
-
-  // Update all ranks in a transaction
-  await prisma.$transaction(
-    updates.map(({ id, rank }) =>
-      prisma.album.update({
-        where: { id },
-        data: { rank },
-      })
-    )
+// This route has been replaced by /api/user-albums/rerank
+export async function POST() {
+  return NextResponse.json(
+    { error: "Use /api/user-albums/rerank instead" },
+    { status: 410 }
   );
-
-  return NextResponse.json({ ok: true });
 }

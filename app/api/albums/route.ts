@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import { getSpotifyAlbum, getBestImage, parseReleaseYear } from "@/lib/spotify";
+import { getSpotifyAlbum, getBestImage } from "@/lib/spotify";
 import { extractColors } from "@/lib/colors";
 
 export async function GET() {
@@ -58,6 +58,7 @@ export async function POST(req: Request) {
     }
   }
 
+  // Create canonical Album record (no user-specific data)
   const album = await prisma.album.create({
     data: {
       title: body.title,
@@ -69,15 +70,6 @@ export async function POST(req: Request) {
       durationMs: spotifyData.durationMs ?? null,
       spotifyGenres: spotifyData.spotifyGenres ?? [],
       tracks: spotifyData.tracks ?? undefined,
-      score: body.score ?? null,
-      rank: body.rank ?? null,
-      status: body.status ?? "reviewed",
-      shortBlurb: body.shortBlurb ?? null,
-      review: body.review ?? null,
-      listenDate: body.listenDate ? new Date(body.listenDate) : null,
-      moodTags: body.moodTags ?? [],
-      userGenreTags: body.userGenreTags ?? [],
-      favoriteTracks: body.favoriteTracks ?? [],
     },
   });
 

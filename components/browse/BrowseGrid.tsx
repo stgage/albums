@@ -5,25 +5,19 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Search, SlidersHorizontal, Disc3, X, LayoutGrid, List } from "lucide-react";
+import { Search, Disc3, X, LayoutGrid, List } from "lucide-react";
 
 type Album = {
   id: string;
   title: string;
   artist: string;
   coverUrl: string | null;
-  score: number | null;
   releaseYear: number | null;
-  userGenreTags: string[];
-  moodTags: string[];
-  status: string;
-  shortBlurb: string | null;
+  spotifyGenres: string[];
   dominantColor: string | null;
-  listenDate: Date | null;
-  rank: number | null;
 };
 
-type SortOption = "recent" | "score" | "rank" | "artist" | "year";
+type SortOption = "recent" | "artist" | "year";
 type ViewMode = "grid" | "list";
 
 export function BrowseGrid({ albums }: { albums: Album[] }) {
@@ -34,7 +28,7 @@ export function BrowseGrid({ albums }: { albums: Album[] }) {
 
   const allGenres = useMemo(() => {
     const genres = new Set<string>();
-    albums.forEach((a) => a.userGenreTags.forEach((g) => genres.add(g)));
+    albums.forEach((a) => a.spotifyGenres.forEach((g) => genres.add(g)));
     return Array.from(genres).sort();
   }, [albums]);
 
@@ -51,18 +45,11 @@ export function BrowseGrid({ albums }: { albums: Album[] }) {
     }
 
     if (filterGenre) {
-      result = result.filter((a) => a.userGenreTags.includes(filterGenre));
+      result = result.filter((a) => a.spotifyGenres.includes(filterGenre));
     }
 
     result.sort((a, b) => {
       switch (sortBy) {
-        case "score":
-          return (b.score ?? 0) - (a.score ?? 0);
-        case "rank":
-          if (!a.rank && !b.rank) return 0;
-          if (!a.rank) return 1;
-          if (!b.rank) return -1;
-          return a.rank - b.rank;
         case "artist":
           return a.artist.localeCompare(b.artist);
         case "year":
@@ -106,8 +93,6 @@ export function BrowseGrid({ albums }: { albums: Album[] }) {
             className="px-3 py-2.5 bg-surface-2 border border-white/8 rounded-xl text-sm text-zinc-300 focus:outline-none focus:border-purple-500/50"
           >
             <option value="recent">Most Recent</option>
-            <option value="score">Highest Score</option>
-            <option value="rank">Rank Order</option>
             <option value="artist">Artist A–Z</option>
             <option value="year">Release Year</option>
           </select>
@@ -118,7 +103,9 @@ export function BrowseGrid({ albums }: { albums: Album[] }) {
               onClick={() => setViewMode("grid")}
               className={cn(
                 "px-3 py-2.5 transition-colors",
-                viewMode === "grid" ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"
+                viewMode === "grid"
+                  ? "bg-white/10 text-white"
+                  : "text-zinc-500 hover:text-zinc-300"
               )}
             >
               <LayoutGrid className="w-4 h-4" />
@@ -127,7 +114,9 @@ export function BrowseGrid({ albums }: { albums: Album[] }) {
               onClick={() => setViewMode("list")}
               className={cn(
                 "px-3 py-2.5 transition-colors",
-                viewMode === "list" ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"
+                viewMode === "list"
+                  ? "bg-white/10 text-white"
+                  : "text-zinc-500 hover:text-zinc-300"
               )}
             >
               <List className="w-4 h-4" />
@@ -229,18 +218,13 @@ function AlbumCard({ album }: { album: Album }) {
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          {album.rank && (
-            <div className="absolute bottom-2 left-2 text-xs font-bold text-white/60">
-              #{album.rank}
-            </div>
-          )}
         </div>
         <p className="text-sm font-medium text-white truncate group-hover:text-purple-300 transition-colors leading-snug">
           {album.title}
         </p>
         <p className="text-xs text-zinc-500 truncate">{album.artist}</p>
-        {album.score && (
-          <p className="text-xs text-zinc-400 mt-0.5">{album.score.toFixed(1)}</p>
+        {album.releaseYear && (
+          <p className="text-xs text-zinc-600 mt-0.5">{album.releaseYear}</p>
         )}
       </Link>
     </motion.div>
@@ -289,7 +273,7 @@ function AlbumRow({ album, index }: { album: Album; index: number }) {
             {album.releaseYear}
           </span>
         )}
-        {album.userGenreTags.slice(0, 1).map((tag) => (
+        {album.spotifyGenres.slice(0, 1).map((tag) => (
           <span
             key={tag}
             className="hidden lg:block text-xs px-2 py-0.5 rounded-full bg-white/5 text-zinc-500"
@@ -297,11 +281,6 @@ function AlbumRow({ album, index }: { album: Album; index: number }) {
             {tag}
           </span>
         ))}
-        {album.score && (
-          <span className="text-sm font-semibold text-zinc-300 w-8 text-right flex-shrink-0">
-            {album.score.toFixed(1)}
-          </span>
-        )}
       </Link>
     </motion.div>
   );
