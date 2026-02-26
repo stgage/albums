@@ -1,40 +1,45 @@
 import Link from "next/link";
-import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { ArrowRight, Disc3, Users, TrendingUp } from "lucide-react";
+import { ActivityFeed } from "@/components/activity/ActivityFeed";
 
 export const dynamic = "force-dynamic";
 
 async function getHomeData() {
-  const [recentAlbums, totalAlbums, totalUsers] = await Promise.all([
-    prisma.album.findMany({
+  const [activities, totalAlbums, totalUsers] = await Promise.all([
+    prisma.activity.findMany({
       orderBy: { createdAt: "desc" },
-      take: 6,
-      select: {
-        id: true,
-        title: true,
-        artist: true,
-        coverUrl: true,
-        dominantColor: true,
+      take: 30,
+      include: {
+        user: { select: { username: true, name: true, image: true } },
+        album: {
+          select: {
+            id: true,
+            title: true,
+            artist: true,
+            coverUrl: true,
+            dominantColor: true,
+          },
+        },
       },
     }),
     prisma.album.count(),
     prisma.user.count(),
   ]);
 
-  return { recentAlbums, totalAlbums, totalUsers };
+  return { activities, totalAlbums, totalUsers };
 }
 
 export default async function HomePage() {
-  const { recentAlbums, totalAlbums, totalUsers } = await getHomeData();
+  const { activities, totalAlbums, totalUsers } = await getHomeData();
 
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="relative min-h-[70vh] flex items-center overflow-hidden">
+      <section className="relative min-h-[60vh] flex items-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-surface" />
 
-        <div className="relative max-w-7xl mx-auto px-4 py-24">
+        <div className="relative max-w-7xl mx-auto px-4 py-20">
           <p className="text-purple-400 text-sm font-medium tracking-widest uppercase mb-4">
             Social Music Journal
           </p>
@@ -91,53 +96,27 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Recent Albums */}
-      {recentAlbums.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 py-16">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="font-serif text-3xl font-bold text-white">
-                Recently Added
-              </h2>
-              <p className="text-zinc-500 text-sm mt-1">
-                Latest albums in the library
-              </p>
-            </div>
-            <Link
-              href="/browse"
-              className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1"
-            >
-              View all <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+      {/* Activity Feed */}
+      <section className="max-w-3xl mx-auto px-4 py-16">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="font-serif text-3xl font-bold text-white">
+              Community Activity
+            </h2>
+            <p className="text-zinc-500 text-sm mt-1">
+              What the community has been listening to
+            </p>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {recentAlbums.map((album) => (
-              <Link key={album.id} href={`/album/${album.id}`} className="group">
-                <div className="relative aspect-square rounded-xl overflow-hidden mb-3 shadow-lg">
-                  {album.coverUrl ? (
-                    <Image
-                      src={album.coverUrl}
-                      alt={album.title}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-110"
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-surface-2 flex items-center justify-center">
-                      <Disc3 className="w-8 h-8 text-zinc-600" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <p className="text-sm font-medium text-white truncate group-hover:text-purple-300 transition-colors">
-                  {album.title}
-                </p>
-                <p className="text-xs text-zinc-500 truncate">{album.artist}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
+          <Link
+            href="/browse"
+            className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1"
+          >
+            Browse all <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <ActivityFeed activities={activities} />
+      </section>
 
       {/* CTA */}
       <section className="max-w-7xl mx-auto px-4 pb-24">

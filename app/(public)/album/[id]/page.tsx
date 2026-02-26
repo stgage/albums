@@ -1,9 +1,12 @@
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { formatDuration, formatTrackDuration } from "@/lib/utils";
-import { Clock, Disc3, Music, ArrowLeft } from "lucide-react";
+import { Clock, Disc3, Music, ArrowLeft, Users, Star } from "lucide-react";
+import { AddToCollectionButton } from "@/components/album/AddToCollectionButton";
+import { UserAvatar } from "@/components/user/UserAvatar";
 import type { Metadata } from "next";
 
 type Props = { params: Promise<{ id: string }> };
@@ -20,9 +23,9 @@ async function getAlbum(id: string) {
           score: true,
           shortBlurb: true,
           review: true,
-          user: { select: { username: true, name: true } },
+          user: { select: { username: true, name: true, image: true } },
         },
-        orderBy: { rank: "asc" },
+        orderBy: { score: "desc" },
       },
     },
   });
@@ -40,8 +43,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function AlbumPage({ params }: Props) {
   const { id } = await params;
-  const album = await getAlbum(id);
+
+  const [album, session] = await Promise.all([getAlbum(id), auth()]);
   if (!album) notFound();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userId: string | null = (session?.user as any)?.id ?? null;
+
+  // Check if the current user has this album in their collection
+  let userAlbumId: string | null = null;
+  if (userId) {
+    const ua = await prisma.userAlbum.findUnique({
+      where: { userId_albumId: { userId, albumId: id } },
+      select: { id: true },
+    });
+    userAlbumId = ua?.id ?? null;
+  }
 
   const bgColor = album.dominantColor ?? "#1a1a2e";
 
@@ -51,6 +68,14 @@ export default async function AlbumPage({ params }: Props) {
     duration_ms: number;
     track_number: number;
   }> | null;
+
+  // Community stats
+  const rankedByCount = album.userAlbums.length;
+  const scoredAlbums = album.userAlbums.filter((ua) => ua.score != null);
+  const avgScore =
+    scoredAlbums.length > 0
+      ? scoredAlbums.reduce((s, ua) => s + (ua.score ?? 0), 0) / scoredAlbums.length
+      : null;
 
   return (
     <div className="min-h-screen">
@@ -118,14 +143,55 @@ export default async function AlbumPage({ params }: Props) {
 
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <Link
             href="/browse"
             className="text-sm text-zinc-500 hover:text-zinc-300 flex items-center gap-1.5 w-fit"
           >
             <ArrowLeft className="w-4 h-4" /> Back to browse
           </Link>
+
+          {/* Add to collection CTA */}
+          {userId && (
+            <AddToCollectionButton albumId={id} userAlbumId={userAlbumId} />
+          )}
+          {!userId && (
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-300 text-sm font-medium rounded-xl transition-colors"
+            >
+              Log in to add to collection
+            </Link>
+          )}
         </div>
+
+        {/* Global stats bar */}
+        {rankedByCount > 0 && (
+          <div className="flex items-center gap-6 px-5 py-3 glass rounded-2xl border border-white/5 mb-8">
+            <div className="flex items-center gap-2 text-sm">
+              <Users className="w-4 h-4 text-purple-400" />
+              <span className="text-zinc-300 font-medium">{rankedByCount}</span>
+              <span className="text-zinc-500">
+                {rankedByCount === 1 ? "member ranked" : "members ranked"}
+              </span>
+            </div>
+            {avgScore != null && (
+              <div className="flex items-center gap-2 text-sm">
+                <Star className="w-4 h-4 text-yellow-400" />
+                <span className="text-zinc-300 font-medium">
+                  {avgScore.toFixed(1)}
+                </span>
+                <span className="text-zinc-500">avg score</span>
+              </div>
+            )}
+            <Link
+              href="/ranked"
+              className="ml-auto text-xs text-purple-400 hover:text-purple-300 transition-colors"
+            >
+              See global rankings →
+            </Link>
+          </div>
+        )}
 
         <div className="grid md:grid-cols-3 gap-8">
           {/* Main content */}
@@ -143,9 +209,11 @@ export default async function AlbumPage({ params }: Props) {
                       className="p-4 rounded-xl glass border border-white/5"
                     >
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="w-8 h-8 rounded-full bg-purple-600/30 flex items-center justify-center text-purple-300 text-xs font-bold">
-                          {ua.user.name?.[0] ?? ua.user.username?.[0] ?? "?"}
-                        </div>
+                        <UserAvatar
+                          name={ua.user.name ?? ua.user.username}
+                          image={ua.user.image}
+                          size={32}
+                        />
                         <div>
                           <Link
                             href={`/u/${ua.user.username ?? ""}`}

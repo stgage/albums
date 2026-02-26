@@ -235,7 +235,7 @@ export function UserAlbumEditForm({
             className="rounded-xl flex-shrink-0"
           />
         ) : (
-          <div className="w-18 h-18 rounded-xl bg-surface-2 flex items-center justify-center flex-shrink-0">
+          <div className="w-[72px] h-[72px] rounded-xl bg-surface-2 flex items-center justify-center flex-shrink-0">
             <Disc3 className="w-8 h-8 text-zinc-600" />
           </div>
         )}

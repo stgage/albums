@@ -21,6 +21,8 @@ type Stats = {
   releaseDecades: { decade: string; count: number }[];
   topGenres: { genre: string; count: number }[];
   topArtists: { artist: string; count: number }[];
+  avgScore?: number | null;
+  totalScored?: number;
 };
 
 const PURPLE = "#a855f7";
@@ -56,7 +58,10 @@ export function StatsCharts({ stats }: { stats: Stats }) {
         <h2 className="font-serif text-lg font-bold text-white mb-1">
           Score Distribution
         </h2>
-        <p className="text-xs text-zinc-500 mb-4">How scores are spread</p>
+        <p className="text-xs text-zinc-500 mb-4">
+          How community scores are spread
+          {stats.totalScored ? ` · ${stats.totalScored} ratings` : ""}
+        </p>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={stats.scoreDistribution} barCategoryGap="20%">
             <XAxis

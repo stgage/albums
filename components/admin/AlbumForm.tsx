@@ -51,6 +51,7 @@ export function AlbumForm({ album }: { album?: Album }) {
       const res = await fetch(
         `/api/spotify?q=${encodeURIComponent(searchQuery)}`
       );
+      if (!res.ok) return;
       const data = await res.json();
       setSearchResults(data);
     } finally {

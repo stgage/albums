@@ -43,6 +43,7 @@ export function SettingsForm({ user }: { user: UserData }) {
 
   async function handleProfileSave(e: React.FormEvent) {
     e.preventDefault();
+    if (!user.username) return;
     setProfileError("");
     setProfileSaving(true);
 

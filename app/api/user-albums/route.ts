@@ -173,7 +173,7 @@ export async function POST(req: Request) {
       userId,
       albumId: album.id,
       type: "reviewed",
-      data: { rank: nextRank },
+      data: { rank: nextRank, score: score ?? null, blurb: shortBlurb ?? null },
     },
   });
 

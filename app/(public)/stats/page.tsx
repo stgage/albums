@@ -15,6 +15,7 @@ async function getStats() {
     totalAlbums,
     totalUsers,
     totalRanked,
+    scoredUserAlbums,
   ] = await Promise.all([
     prisma.album.findMany({
       select: {
@@ -26,6 +27,10 @@ async function getStats() {
     prisma.album.count(),
     prisma.user.count(),
     prisma.userAlbum.count({ where: { rank: { not: null } } }),
+    prisma.userAlbum.findMany({
+      where: { score: { not: null } },
+      select: { score: true },
+    }),
   ]);
 
   // Release decades
@@ -63,14 +68,32 @@ async function getStats() {
     .filter((a) => a.count > 1)
     .slice(0, 10);
 
+  // Score distribution from user scores
+  const scoreBuckets: Record<string, number> = {
+    "1–2": 0, "3–4": 0, "5–6": 0, "7–8": 0, "9–10": 0,
+  };
+  let scoreSum = 0;
+  scoredUserAlbums.forEach(({ score }) => {
+    if (score == null) return;
+    scoreSum += score;
+    if (score <= 2) scoreBuckets["1–2"]++;
+    else if (score <= 4) scoreBuckets["3–4"]++;
+    else if (score <= 6) scoreBuckets["5–6"]++;
+    else if (score <= 8) scoreBuckets["7–8"]++;
+    else scoreBuckets["9–10"]++;
+  });
+  const scoreDistribution = Object.entries(scoreBuckets).map(([range, count]) => ({ range, count }));
+  const avgScore = scoredUserAlbums.length > 0
+    ? scoreSum / scoredUserAlbums.length
+    : null;
+
   return {
     totalAlbums,
     totalUsers,
     totalRanked,
-    // Keep these compatible with StatsCharts (pass empty/zero for removed fields)
-    totalReviewed: totalAlbums,
-    avgScore: 0,
-    scoreDistribution: [],
+    totalScored: scoredUserAlbums.length,
+    avgScore,
+    scoreDistribution,
     albumsPerYear: [],
     releaseDecades,
     topGenres,
@@ -87,17 +110,18 @@ export default async function StatsPage() {
         <h1 className="font-serif text-4xl font-bold text-white mb-2">
           Stats
         </h1>
-        <p className="text-zinc-400">By the numbers</p>
+        <p className="text-zinc-400">Community by the numbers</p>
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
         {[
           { label: "Albums in Library", value: stats.totalAlbums },
           { label: "Community Members", value: stats.totalUsers },
+          { label: "Total Rankings", value: stats.totalRanked },
           {
-            label: "Total Rankings",
-            value: stats.totalRanked,
+            label: "Avg Score",
+            value: stats.avgScore != null ? `${stats.avgScore.toFixed(1)}/10` : "—",
           },
         ].map((stat) => (
           <div

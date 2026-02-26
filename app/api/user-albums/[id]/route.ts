@@ -68,11 +68,14 @@ export async function PATCH(req: Request, { params }: Params) {
     });
   }
 
+  const newRankValue = body.rank != null ? parseInt(body.rank) : existing.rank;
+  const newScoreValue = body.score != null ? parseFloat(body.score) : existing.score;
+
   const updated = await prisma.userAlbum.update({
     where: { id },
     data: {
-      score: body.score != null ? parseFloat(body.score) : existing.score,
-      rank: body.rank != null ? parseInt(body.rank) : existing.rank,
+      score: newScoreValue,
+      rank: newRankValue,
       shortBlurb:
         "shortBlurb" in body ? body.shortBlurb : existing.shortBlurb,
       review: "review" in body ? body.review : existing.review,
@@ -89,6 +92,42 @@ export async function PATCH(req: Request, { params }: Params) {
     },
     include: { album: true },
   });
+
+  // Log activity for significant changes (best-effort)
+  try {
+    if (body.rank != null && body.rank !== existing.rank) {
+      if (existing.rank === null) {
+        await prisma.activity.create({
+          data: {
+            userId,
+            albumId: existing.albumId,
+            type: "ranked",
+            data: { rank: newRankValue },
+          },
+        });
+      } else {
+        await prisma.activity.create({
+          data: {
+            userId,
+            albumId: existing.albumId,
+            type: "reranked",
+            data: { rank: newRankValue, prevRank: existing.rank },
+          },
+        });
+      }
+    } else if (body.score != null && body.score !== existing.score) {
+      await prisma.activity.create({
+        data: {
+          userId,
+          albumId: existing.albumId,
+          type: "score_updated",
+          data: { score: newScoreValue },
+        },
+      });
+    }
+  } catch {
+    // Activity logging is best-effort, never fail the request
+  }
 
   return NextResponse.json(updated);
 }
