@@ -7,10 +7,7 @@ export function ActivityFeed({ activities }: { activities: ActivityItem[] }) {
     return (
       <div className="text-center py-16">
         <Disc3 className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-        <p className="text-zinc-500 mb-1">No activity yet</p>
-        <p className="text-zinc-600 text-sm">
-          Be the first to add albums to your collection
-        </p>
+        <p className="text-zinc-600 text-sm">No activity yet</p>
       </div>
     );
   }

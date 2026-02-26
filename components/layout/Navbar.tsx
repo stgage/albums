@@ -7,25 +7,18 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
   Disc3,
-  BarChart3,
+  Radio,
   ListOrdered,
   Grid3X3,
+  Library,
   LogOut,
   Settings,
   User,
   LayoutDashboard,
-  Library,
   ChevronDown,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-
-const navLinks = [
-  { href: "/", label: "Feed", icon: Disc3 },
-  { href: "/browse", label: "Browse", icon: Grid3X3 },
-  { href: "/ranked", label: "Ranked", icon: ListOrdered },
-  { href: "/stats", label: "Stats", icon: BarChart3 },
-];
 
 function UserInitials({ name }: { name?: string | null }) {
   const initials = name
@@ -37,7 +30,7 @@ function UserInitials({ name }: { name?: string | null }) {
         .slice(0, 2)
     : "?";
   return (
-    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-violet-700 flex items-center justify-center text-white text-xs font-bold">
+    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-violet-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
       {initials}
     </div>
   );
@@ -49,12 +42,10 @@ function AvatarDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      if (ref.current && !ref.current.contains(e.target as Node))
         setOpen(false);
-      }
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -79,23 +70,25 @@ function AvatarDropdown() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 rounded-full hover:ring-2 hover:ring-purple-500/40 transition-all"
+        className="flex items-center gap-1.5 rounded-full hover:ring-2 hover:ring-purple-500/40 transition-all p-0.5"
         aria-label="User menu"
       >
         {user.image ? (
-          <Image
-            src={user.image}
-            alt={user.name ?? "User"}
-            width={32}
-            height={32}
-            className="rounded-full"
-          />
+          <div className="w-8 h-8 flex-shrink-0 relative rounded-full overflow-hidden">
+            <Image
+              src={user.image}
+              alt={user.name ?? "User"}
+              fill
+              className="object-cover"
+              sizes="32px"
+            />
+          </div>
         ) : (
           <UserInitials name={user.name} />
         )}
         <ChevronDown
           className={cn(
-            "w-3.5 h-3.5 text-zinc-400 transition-transform",
+            "w-3.5 h-3.5 text-zinc-400 transition-transform flex-shrink-0",
             open && "rotate-180"
           )}
         />
@@ -103,7 +96,6 @@ function AvatarDropdown() {
 
       {open && (
         <div className="absolute right-0 top-full mt-2 w-52 bg-surface-1 border border-white/8 rounded-xl shadow-xl shadow-black/40 overflow-hidden z-50">
-          {/* User info */}
           <div className="px-4 py-3 border-b border-white/5">
             <p className="text-sm font-medium text-white truncate">
               {user.name ?? username ?? "User"}
@@ -113,7 +105,6 @@ function AvatarDropdown() {
             )}
           </div>
 
-          {/* Menu items */}
           <div className="py-1">
             {username && (
               <Link
@@ -122,7 +113,7 @@ function AvatarDropdown() {
                 className="flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
               >
                 <User className="w-4 h-4" />
-                My Profile
+                My Albums
               </Link>
             )}
             <Link
@@ -131,7 +122,7 @@ function AvatarDropdown() {
               className="flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
             >
               <Library className="w-4 h-4" />
-              My Collection
+              Manage Collection
             </Link>
             <Link
               href="/settings"
@@ -153,7 +144,6 @@ function AvatarDropdown() {
             )}
           </div>
 
-          {/* Sign out */}
           <div className="border-t border-white/5 py-1">
             <button
               onClick={handleSignOut}
@@ -173,6 +163,17 @@ export function Navbar() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
 
+  // @ts-expect-error — custom session fields
+  const username = session?.user?.username as string | null | undefined;
+  const myAlbumsHref = username ? `/u/${username}` : "/my/collection";
+
+  const navLinks = [
+    { href: "/", label: "Feed", icon: Radio },
+    { href: "/browse", label: "Browse", icon: Grid3X3 },
+    { href: "/ranked", label: "Ranked", icon: ListOrdered },
+    { href: myAlbumsHref, label: "My Albums", icon: Library },
+  ];
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-16">
       <div className="absolute inset-0 bg-surface/80 backdrop-blur-xl border-b border-white/5" />
@@ -187,19 +188,22 @@ export function Navbar() {
           </span>
         </Link>
 
-        {/* Nav Links */}
+        {/* Desktop nav links */}
         <div className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => {
+            const Icon = link.icon;
             const isActive =
-              link.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(link.href);
+              link.label === "My Albums"
+                ? pathname.startsWith("/u/") || pathname.startsWith("/my/")
+                : link.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(link.href);
             return (
               <Link
-                key={link.href}
+                key={link.label}
                 href={link.href}
                 className={cn(
-                  "relative px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+                  "relative flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-colors",
                   isActive
                     ? "text-white"
                     : "text-zinc-400 hover:text-zinc-200"
@@ -212,6 +216,7 @@ export function Navbar() {
                     transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
                   />
                 )}
+                <Icon className="relative w-4 h-4" />
                 <span className="relative">{link.label}</span>
               </Link>
             );
@@ -234,17 +239,19 @@ export function Navbar() {
           )}
         </div>
 
-        {/* Mobile nav */}
+        {/* Mobile bottom nav */}
         <div className="flex md:hidden items-center gap-1 absolute bottom-0 left-0 right-0 -mb-14 justify-center bg-surface/90 backdrop-blur-xl border-b border-white/5 px-2 pb-1">
           {navLinks.map((link) => {
             const Icon = link.icon;
             const isActive =
-              link.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(link.href);
+              link.label === "My Albums"
+                ? pathname.startsWith("/u/") || pathname.startsWith("/my/")
+                : link.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(link.href);
             return (
               <Link
-                key={link.href}
+                key={link.label}
                 href={link.href}
                 className={cn(
                   "flex flex-col items-center gap-0.5 px-3 py-2 text-xs rounded-lg transition-colors",
