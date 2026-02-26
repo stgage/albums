@@ -19,6 +19,26 @@ import type { MusicBrainzAlbum } from "@/lib/musicbrainz";
 const inputClass =
   "w-full px-3 py-2.5 bg-surface-2 border border-white/8 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500/50";
 
+function AlbumThumbnail({ mbid, title }: { mbid: string; title: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div className="w-12 h-12 rounded-lg bg-surface-2 flex items-center justify-center flex-shrink-0">
+        <Disc3 className="w-5 h-5 text-zinc-600" />
+      </div>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`https://coverartarchive.org/release-group/${mbid}/front-250`}
+      alt={title}
+      onError={() => setFailed(true)}
+      className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+    />
+  );
+}
+
 function TagInput({
   label,
   tags,
@@ -236,9 +256,7 @@ export default function MyAddPage() {
                   }}
                   className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/8 transition-colors text-left border border-white/5 hover:border-white/10"
                 >
-                  <div className="w-12 h-12 rounded-lg bg-surface-2 flex items-center justify-center flex-shrink-0">
-                    <Disc3 className="w-5 h-5 text-zinc-600" />
-                  </div>
+                  <AlbumThumbnail mbid={result.id} title={result.title} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">
                       {result.title}
