@@ -10,7 +10,7 @@ export type ItunesAlbum = {
 
 export async function searchAlbums(query: string): Promise<ItunesAlbum[]> {
   const res = await fetch(
-    `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=album&limit=12`,
+    `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=album&limit=25`,
     { next: { revalidate: 60 } }
   );
   if (!res.ok) throw new Error(`iTunes search error: ${res.statusText}`);
