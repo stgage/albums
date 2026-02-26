@@ -103,7 +103,6 @@ function TagInput({
 type UserAlbumData = {
   id: string;
   rank: number | null;
-  score: number | null;
   status: string;
   shortBlurb: string | null;
   review: string | null;
@@ -134,7 +133,6 @@ export function UserAlbumEditForm({
   const [saved, setSaved] = useState(false);
 
   const [rank, setRank] = useState(userAlbum.rank?.toString() ?? "");
-  const [score, setScore] = useState(userAlbum.score?.toString() ?? "");
   const [status, setStatus] = useState(userAlbum.status);
   const [shortBlurb, setShortBlurb] = useState(userAlbum.shortBlurb ?? "");
   const [review, setReview] = useState(userAlbum.review ?? "");
@@ -144,7 +142,6 @@ export function UserAlbumEditForm({
       : ""
   );
   const [moodTags, setMoodTags] = useState(userAlbum.moodTags);
-  const [genreTags, setGenreTags] = useState(userAlbum.userGenreTags);
   const [favTracks, setFavTracks] = useState(userAlbum.favoriteTracks);
 
   // Relisten log
@@ -162,13 +159,11 @@ export function UserAlbumEditForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           rank: rank ? parseInt(rank) : null,
-          score: score ? parseFloat(score) : null,
           status,
           shortBlurb: shortBlurb || null,
           review: review || null,
           listenDate: listenDate || null,
           moodTags,
-          userGenreTags: genreTags,
           favoriteTracks: favTracks,
         }),
       });
@@ -254,12 +249,12 @@ export function UserAlbumEditForm({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Ranking & Score */}
+        {/* Ranking */}
         <div className="glass rounded-2xl p-5 space-y-4">
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
-            Ranking & Score
+            Ranking
           </h2>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1.5">
                 Rank{" "}
@@ -279,21 +274,6 @@ export function UserAlbumEditForm({
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                Score (0–10)
-              </label>
-              <input
-                type="number"
-                value={score}
-                onChange={(e) => setScore(e.target.value)}
-                min={0}
-                max={10}
-                step={0.1}
-                className={inputClass}
-                placeholder="—"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5">
                 Status
               </label>
               <select
@@ -307,9 +287,6 @@ export function UserAlbumEditForm({
               </select>
             </div>
           </div>
-          <p className="text-xs text-zinc-600">
-            Rank determines your position in the global Borda count. Score is personal and optional.
-          </p>
         </div>
 
         {/* Review */}
@@ -360,18 +337,11 @@ export function UserAlbumEditForm({
             Tags
           </h2>
           <TagInput
-            label="Genre Tags"
-            tags={genreTags}
-            onAdd={(t) => setGenreTags((p) => [...p, t])}
-            onRemove={(t) => setGenreTags((p) => p.filter((g) => g !== t))}
-            color="purple"
-          />
-          <TagInput
-            label="Mood / Vibe"
+            label="Tags"
             tags={moodTags}
             onAdd={(t) => setMoodTags((p) => [...p, t])}
             onRemove={(t) => setMoodTags((p) => p.filter((m) => m !== t))}
-            color="blue"
+            color="purple"
           />
           <TagInput
             label="Favorite Tracks"

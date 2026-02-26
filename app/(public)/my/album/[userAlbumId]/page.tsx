@@ -43,7 +43,6 @@ export default async function UserAlbumEditPage({ params }: Props) {
         userAlbum={{
           id: userAlbum.id,
           rank: userAlbum.rank,
-          score: userAlbum.score,
           status: userAlbum.status,
           shortBlurb: userAlbum.shortBlurb,
           review: userAlbum.review,

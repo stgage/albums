@@ -26,7 +26,6 @@ import { cn } from "@/lib/utils";
 type UserAlbumItem = {
   id: string;
   rank: number;
-  score: number | null;
   shortBlurb: string | null;
   album: {
     id: string;
@@ -137,13 +136,6 @@ function SortableRow({
           </p>
         )}
       </div>
-
-      {/* Score */}
-      {item.score != null && (
-        <span className="text-sm font-semibold text-zinc-300 flex-shrink-0 w-8 text-right">
-          {item.score.toFixed(1)}
-        </span>
-      )}
 
       {/* Edit link */}
       <Link

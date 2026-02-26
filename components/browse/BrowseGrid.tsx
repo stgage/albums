@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Search, Disc3, X, LayoutGrid, List } from "lucide-react";
+import { Search, Disc3, X, LayoutGrid, List, Crown } from "lucide-react";
 
 type Album = {
   id: string;
@@ -17,10 +17,18 @@ type Album = {
   dominantColor: string | null;
 };
 
-type SortOption = "recent" | "artist" | "year";
+type BordaRank = { rank: number; bordaScore: number; rankedByCount: number };
+
+type SortOption = "recent" | "artist" | "year" | "ranked";
 type ViewMode = "grid" | "list";
 
-export function BrowseGrid({ albums }: { albums: Album[] }) {
+export function BrowseGrid({
+  albums,
+  bordaRanks = {},
+}: {
+  albums: Album[];
+  bordaRanks?: Record<string, BordaRank>;
+}) {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [filterGenre, setFilterGenre] = useState<string | null>(null);
@@ -48,19 +56,28 @@ export function BrowseGrid({ albums }: { albums: Album[] }) {
       result = result.filter((a) => a.spotifyGenres.includes(filterGenre));
     }
 
-    result.sort((a, b) => {
-      switch (sortBy) {
-        case "artist":
-          return a.artist.localeCompare(b.artist);
-        case "year":
-          return (b.releaseYear ?? 0) - (a.releaseYear ?? 0);
-        default:
-          return 0; // recent = already sorted by DB
-      }
-    });
+    if (sortBy === "ranked") {
+      result = result.filter((a) => bordaRanks[a.id] !== undefined);
+      result.sort(
+        (a, b) => (bordaRanks[a.id]?.rank ?? Infinity) - (bordaRanks[b.id]?.rank ?? Infinity)
+      );
+    } else {
+      result.sort((a, b) => {
+        switch (sortBy) {
+          case "artist":
+            return a.artist.localeCompare(b.artist);
+          case "year":
+            return (b.releaseYear ?? 0) - (a.releaseYear ?? 0);
+          default:
+            return 0; // recent = already sorted by DB
+        }
+      });
+    }
 
     return result;
-  }, [albums, search, sortBy, filterGenre]);
+  }, [albums, search, sortBy, filterGenre, bordaRanks]);
+
+  const isRanked = sortBy === "ranked";
 
   return (
     <div>
@@ -95,6 +112,7 @@ export function BrowseGrid({ albums }: { albums: Album[] }) {
             <option value="recent">Most Recent</option>
             <option value="artist">Artist A–Z</option>
             <option value="year">Release Year</option>
+            <option value="ranked">Community Ranking</option>
           </select>
 
           {/* View toggle */}
@@ -165,7 +183,11 @@ export function BrowseGrid({ albums }: { albums: Album[] }) {
             className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
           >
             {filtered.map((album) => (
-              <AlbumCard key={album.id} album={album} />
+              <AlbumCard
+                key={album.id}
+                album={album}
+                rankNumber={isRanked ? bordaRanks[album.id]?.rank : undefined}
+              />
             ))}
           </motion.div>
         ) : (
@@ -174,10 +196,16 @@ export function BrowseGrid({ albums }: { albums: Album[] }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="space-y-2"
+            className="space-y-1"
           >
             {filtered.map((album, i) => (
-              <AlbumRow key={album.id} album={album} index={i} />
+              <AlbumRow
+                key={album.id}
+                album={album}
+                index={i}
+                rankNumber={isRanked ? bordaRanks[album.id]?.rank : undefined}
+                rankedByCount={isRanked ? bordaRanks[album.id]?.rankedByCount : undefined}
+              />
             ))}
           </motion.div>
         )}
@@ -193,7 +221,13 @@ export function BrowseGrid({ albums }: { albums: Album[] }) {
   );
 }
 
-function AlbumCard({ album }: { album: Album }) {
+function AlbumCard({
+  album,
+  rankNumber,
+}: {
+  album: Album;
+  rankNumber?: number;
+}) {
   return (
     <motion.div
       layout
@@ -218,6 +252,17 @@ function AlbumCard({ album }: { album: Album }) {
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          {rankNumber !== undefined && (
+            <div className="absolute top-1.5 left-1.5">
+              {rankNumber === 1 ? (
+                <Crown className="w-4 h-4 text-yellow-400 drop-shadow" />
+              ) : (
+                <span className="text-xs font-bold text-white bg-black/60 rounded px-1.5 py-0.5">
+                  {rankNumber}
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <p className="text-sm font-medium text-white truncate group-hover:text-purple-300 transition-colors leading-snug">
           {album.title}
@@ -231,7 +276,20 @@ function AlbumCard({ album }: { album: Album }) {
   );
 }
 
-function AlbumRow({ album, index }: { album: Album; index: number }) {
+function AlbumRow({
+  album,
+  index,
+  rankNumber,
+  rankedByCount,
+}: {
+  album: Album;
+  index: number;
+  rankNumber?: number;
+  rankedByCount?: number;
+}) {
+  const displayRank = rankNumber ?? index + 1;
+  const isTop3 = rankNumber !== undefined && rankNumber <= 3;
+
   return (
     <motion.div
       layout
@@ -242,12 +300,38 @@ function AlbumRow({ album, index }: { album: Album; index: number }) {
     >
       <Link
         href={`/album/${album.id}`}
-        className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors group"
+        className={cn(
+          "flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors group",
+          isTop3 && "hover:bg-white/3"
+        )}
+        style={
+          isTop3 && album.dominantColor
+            ? { background: `linear-gradient(135deg, ${album.dominantColor}15, transparent)` }
+            : undefined
+        }
       >
-        <span className="w-6 text-center text-xs text-zinc-600 font-mono">
-          {index + 1}
-        </span>
-        <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-surface-2">
+        <div className="w-8 text-center flex-shrink-0">
+          {rankNumber === 1 ? (
+            <Crown className="w-4 h-4 text-yellow-400 mx-auto" />
+          ) : (
+            <span
+              className={cn(
+                "font-mono",
+                isTop3 ? "text-sm font-bold text-zinc-300" : "text-xs text-zinc-600"
+              )}
+            >
+              {displayRank}
+            </span>
+          )}
+        </div>
+        <div
+          className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-surface-2"
+          style={
+            isTop3 && album.dominantColor
+              ? { boxShadow: `0 4px 16px ${album.dominantColor}44` }
+              : undefined
+          }
+        >
           {album.coverUrl ? (
             <Image
               src={album.coverUrl}
@@ -266,17 +350,22 @@ function AlbumRow({ album, index }: { album: Album; index: number }) {
           <p className="text-sm font-medium text-white truncate group-hover:text-purple-300 transition-colors">
             {album.title}
           </p>
-          <p className="text-xs text-zinc-500 truncate">{album.artist}</p>
+          <p className="text-xs text-zinc-500 truncate">
+            {album.artist}
+            {rankedByCount !== undefined && (
+              <span className="text-zinc-600"> · {rankedByCount} {rankedByCount === 1 ? "ranking" : "rankings"}</span>
+            )}
+          </p>
         </div>
         {album.releaseYear && (
-          <span className="text-xs text-zinc-600 hidden md:block">
+          <span className="text-xs text-zinc-600 hidden md:block flex-shrink-0">
             {album.releaseYear}
           </span>
         )}
-        {album.spotifyGenres.slice(0, 1).map((tag) => (
+        {!rankNumber && album.spotifyGenres.slice(0, 1).map((tag) => (
           <span
             key={tag}
-            className="hidden lg:block text-xs px-2 py-0.5 rounded-full bg-white/5 text-zinc-500"
+            className="hidden lg:block text-xs px-2 py-0.5 rounded-full bg-white/5 text-zinc-500 flex-shrink-0"
           >
             {tag}
           </span>

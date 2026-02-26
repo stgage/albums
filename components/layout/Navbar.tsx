@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import {
   Disc3,
   Radio,
-  ListOrdered,
   Grid3X3,
   Library,
   LogOut,
@@ -168,7 +167,6 @@ export function Navbar() {
   const navLinks = [
     { href: "/", label: "Feed", icon: Radio },
     { href: "/browse", label: "Browse", icon: Grid3X3 },
-    { href: "/ranked", label: "Ranked", icon: ListOrdered },
     { href: myAlbumsHref, label: "My Albums", icon: Library },
   ];
 

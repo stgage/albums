@@ -47,7 +47,16 @@
       "Bash(/Users/sam/albums/node_modules/.bin/prisma db push:*)",
       "Bash(export PATH=\"$HOME/.nvm/versions/node/v22.22.0/bin:$PATH\")",
       "Bash(git -C /Users/sam/albums add:*)",
-      "Bash(git -C /Users/sam/albums status)"
+      "Bash(git -C /Users/sam/albums status)",
+      "Bash(~/.nvm/versions/node/v22.22.0/bin/npm install bcryptjs)",
+      "Bash(~/.nvm/versions/node/v22.22.0/bin/npm install --save-dev @types/bcryptjs)",
+      "Bash(~/.nvm/versions/node/v22.22.0/bin/node ~/.nvm/versions/node/v22.22.0/bin/npm install bcryptjs @types/bcryptjs)",
+      "Bash(~/.nvm/versions/node/v22.22.0/bin/node ~/.nvm/versions/node/v22.22.0/bin/npm:*)",
+      "Bash(npx next build)",
+      "Bash(cat:*)",
+      "Bash(npm run build)",
+      "Bash(npx vercel env ls)",
+      "Bash(git restore --staged .claude/settings.local.json)"
     ]
   }
 }

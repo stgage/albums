@@ -102,11 +102,9 @@ export default function MyAddPage() {
   const [results, setResults] = useState<SpotifyResult[]>([]);
   const [selected, setSelected] = useState<SpotifyResult | null>(null);
 
-  const [score, setScore] = useState("");
   const [shortBlurb, setShortBlurb] = useState("");
   const [listenDate, setListenDate] = useState("");
-  const [moodTags, setMoodTags] = useState<string[]>([]);
-  const [genreTags, setGenreTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -141,11 +139,9 @@ export default function MyAddPage() {
           artist: selected.artists.map((a) => a.name).join(", "),
           coverUrl: selected.images[0]?.url ?? null,
           releaseYear: parseInt(selected.release_date.split("-")[0]),
-          score: score ? parseFloat(score) : null,
           shortBlurb: shortBlurb || null,
           listenDate: listenDate || null,
-          moodTags,
-          userGenreTags: genreTags,
+          moodTags: tags,
         }),
       });
 
@@ -173,12 +169,9 @@ export default function MyAddPage() {
         Back to collection
       </Link>
 
-      <h1 className="font-serif text-4xl font-bold text-white mb-2">
+      <h1 className="font-serif text-4xl font-bold text-white mb-8">
         Add Album
       </h1>
-      <p className="text-zinc-400 text-sm mb-8">
-        Search for an album and add it to your ranked collection
-      </p>
 
       {/* Step 1: Spotify search */}
       {!selected ? (
@@ -294,33 +287,16 @@ export default function MyAddPage() {
               </span>
             </h2>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                  Score (0–10)
-                </label>
-                <input
-                  type="number"
-                  value={score}
-                  onChange={(e) => setScore(e.target.value)}
-                  min={0}
-                  max={10}
-                  step={0.1}
-                  placeholder="8.5"
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                  Listen Date
-                </label>
-                <input
-                  type="date"
-                  value={listenDate}
-                  onChange={(e) => setListenDate(e.target.value)}
-                  className={cn(inputClass, "text-white [color-scheme:dark]")}
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+                Listen Date
+              </label>
+              <input
+                type="date"
+                value={listenDate}
+                onChange={(e) => setListenDate(e.target.value)}
+                className={cn(inputClass, "text-white [color-scheme:dark]")}
+              />
             </div>
 
             <div>
@@ -337,17 +313,10 @@ export default function MyAddPage() {
             </div>
 
             <TagInput
-              label="Genre Tags"
-              tags={genreTags}
-              onAdd={(t) => setGenreTags((p) => [...p, t])}
-              onRemove={(t) => setGenreTags((p) => p.filter((g) => g !== t))}
-            />
-
-            <TagInput
-              label="Mood / Vibe"
-              tags={moodTags}
-              onAdd={(t) => setMoodTags((p) => [...p, t])}
-              onRemove={(t) => setMoodTags((p) => p.filter((m) => m !== t))}
+              label="Tags"
+              tags={tags}
+              onAdd={(t) => setTags((p) => [...p, t])}
+              onRemove={(t) => setTags((p) => p.filter((m) => m !== t))}
             />
           </div>
 
