@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import { getSpotifyAlbum, getBestImage } from "@/lib/spotify";
 import { extractColors } from "@/lib/colors";
 
 export async function GET() {
@@ -43,18 +42,17 @@ export async function POST(req: Request) {
 
   const body = await req.json();
   const {
-    spotifyId,
+    itunesId,
     albumId: existingAlbumId,
     title,
     artist,
     coverUrl: providedCoverUrl,
     releaseYear,
-    score,
+    genres,
     shortBlurb,
     review,
     listenDate,
     moodTags,
-    userGenreTags,
     favoriteTracks,
     status,
   } = body;
@@ -63,65 +61,42 @@ export async function POST(req: Request) {
   let album;
 
   if (existingAlbumId) {
-    // Use a specific existing album
     album = await prisma.album.findUnique({ where: { id: existingAlbumId } });
     if (!album) return NextResponse.json({ error: "Album not found" }, { status: 404 });
-  } else if (spotifyId) {
-    // Find existing by Spotify ID or create from Spotify data
-    album = await prisma.album.findUnique({ where: { spotifyId } });
+  } else if (itunesId) {
+    // Find existing by iTunes ID (stored in spotifyId field) or create
+    album = await prisma.album.findUnique({ where: { spotifyId: itunesId } });
 
     if (!album) {
-      let coverUrl = providedCoverUrl ?? null;
-      let spotifyGenres: string[] = [];
-      let trackCount: number | null = null;
-      let durationMs: number | null = null;
-      let tracks: unknown = undefined;
+      const coverUrl = providedCoverUrl ?? null;
       let dominantColor: string | null = null;
       let paletteColors: string[] = [];
 
-      try {
-        const spotifyAlbum = await getSpotifyAlbum(spotifyId);
-        coverUrl = getBestImage(spotifyAlbum.images) ?? coverUrl;
-        spotifyGenres = spotifyAlbum.genres ?? [];
-        trackCount = spotifyAlbum.total_tracks ?? null;
-        durationMs =
-          spotifyAlbum.tracks?.items.reduce(
-            (sum: number, t) => sum + t.duration_ms,
-            0
-          ) ?? null;
-        tracks = spotifyAlbum.tracks?.items ?? null;
-
-        if (coverUrl) {
-          try {
-            const colors = await extractColors(coverUrl);
-            dominantColor = (colors as { dominantColor?: string }).dominantColor ?? null;
-            paletteColors = (colors as { paletteColors?: string[] }).paletteColors ?? [];
-          } catch {
-            // color extraction optional
-          }
+      if (coverUrl) {
+        try {
+          const colors = await extractColors(coverUrl);
+          dominantColor = (colors as { dominantColor?: string }).dominantColor ?? null;
+          paletteColors = (colors as { paletteColors?: string[] }).paletteColors ?? [];
+        } catch {
+          // color extraction optional
         }
-      } catch (e) {
-        console.error("Spotify fetch failed:", e);
       }
 
       album = await prisma.album.create({
         data: {
-          spotifyId,
+          spotifyId: itunesId,
           title: title ?? "Unknown Album",
           artist: artist ?? "Unknown Artist",
           coverUrl,
           releaseYear: releaseYear ?? null,
-          spotifyGenres,
-          trackCount,
-          durationMs,
-          tracks: tracks as never,
+          spotifyGenres: genres ?? [],
           dominantColor,
           paletteColors,
         },
       });
     }
   } else {
-    // Manual album (no Spotify)
+    // Manual album
     album = await prisma.album.create({
       data: {
         title: title ?? "Unknown Album",
@@ -155,12 +130,10 @@ export async function POST(req: Request) {
       userId,
       albumId: album.id,
       rank: nextRank,
-      score: score != null ? parseFloat(score) : null,
       shortBlurb: shortBlurb ?? null,
       review: review ?? null,
       listenDate: listenDate ? new Date(listenDate) : null,
       moodTags: moodTags ?? [],
-      userGenreTags: userGenreTags ?? [],
       favoriteTracks: favoriteTracks ?? [],
       status: status ?? "reviewed",
     },
@@ -173,7 +146,7 @@ export async function POST(req: Request) {
       userId,
       albumId: album.id,
       type: "reviewed",
-      data: { rank: nextRank, score: score ?? null, blurb: shortBlurb ?? null },
+      data: { rank: nextRank, blurb: shortBlurb ?? null },
     },
   });
 

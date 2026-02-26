@@ -15,18 +15,14 @@ import {
   Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-type SpotifyResult = {
-  id: string;
-  name: string;
-  artists: { name: string }[];
-  images: { url: string }[];
-  release_date: string;
-  total_tracks: number;
-};
+import type { ItunesAlbum } from "@/lib/itunes";
 
 const inputClass =
   "w-full px-3 py-2.5 bg-surface-2 border border-white/8 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500/50";
+
+function artworkUrl(url: string, size = 600) {
+  return url.replace("100x100bb", `${size}x${size}bb`);
+}
 
 function TagInput({
   label,
@@ -104,8 +100,8 @@ export default function MyAddPage() {
   const profileHref = username ? `/u/${username}` : "/";
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
-  const [results, setResults] = useState<SpotifyResult[]>([]);
-  const [selected, setSelected] = useState<SpotifyResult | null>(null);
+  const [results, setResults] = useState<ItunesAlbum[]>([]);
+  const [selected, setSelected] = useState<ItunesAlbum | null>(null);
 
   const [shortBlurb, setShortBlurb] = useState("");
   const [listenDate, setListenDate] = useState("");
@@ -139,11 +135,12 @@ export default function MyAddPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          spotifyId: selected.id,
-          title: selected.name,
-          artist: selected.artists.map((a) => a.name).join(", "),
-          coverUrl: selected.images[0]?.url ?? null,
-          releaseYear: parseInt(selected.release_date.split("-")[0]),
+          itunesId: selected.collectionId.toString(),
+          title: selected.collectionName,
+          artist: selected.artistName,
+          coverUrl: artworkUrl(selected.artworkUrl100),
+          releaseYear: new Date(selected.releaseDate).getFullYear(),
+          genres: selected.primaryGenreName ? [selected.primaryGenreName] : [],
           shortBlurb: shortBlurb || null,
           listenDate: listenDate || null,
           moodTags: tags,
@@ -178,7 +175,7 @@ export default function MyAddPage() {
         Add Album
       </h1>
 
-      {/* Step 1: Spotify search */}
+      {/* Step 1: Search */}
       {!selected ? (
         <div>
           <div className="flex gap-2 mb-4">
@@ -214,7 +211,7 @@ export default function MyAddPage() {
             <div className="space-y-1.5">
               {results.map((result) => (
                 <button
-                  key={result.id}
+                  key={result.collectionId}
                   type="button"
                   onClick={() => {
                     setSelected(result);
@@ -222,23 +219,27 @@ export default function MyAddPage() {
                   }}
                   className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/8 transition-colors text-left border border-white/5 hover:border-white/10"
                 >
-                  {result.images[0] && (
+                  {result.artworkUrl100 ? (
                     <Image
-                      src={result.images[0].url}
-                      alt={result.name}
+                      src={artworkUrl(result.artworkUrl100, 48)}
+                      alt={result.collectionName}
                       width={48}
                       height={48}
                       className="rounded-lg object-cover flex-shrink-0"
                     />
+                  ) : (
+                    <div className="w-12 h-12 rounded-lg bg-surface-2 flex items-center justify-center flex-shrink-0">
+                      <Disc3 className="w-5 h-5 text-zinc-600" />
+                    </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">
-                      {result.name}
+                      {result.collectionName}
                     </p>
                     <p className="text-xs text-zinc-400">
-                      {result.artists.map((a) => a.name).join(", ")} ·{" "}
-                      {result.release_date.split("-")[0]} ·{" "}
-                      {result.total_tracks} tracks
+                      {result.artistName} ·{" "}
+                      {new Date(result.releaseDate).getFullYear()} ·{" "}
+                      {result.trackCount} tracks
                     </p>
                   </div>
                   <Plus className="w-4 h-4 text-zinc-500" />
@@ -258,20 +259,20 @@ export default function MyAddPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Selected album header */}
           <div className="flex items-center gap-4 p-4 rounded-2xl glass border border-white/8">
-            {selected.images[0] && (
+            {selected.artworkUrl100 && (
               <Image
-                src={selected.images[0].url}
-                alt={selected.name}
+                src={artworkUrl(selected.artworkUrl100)}
+                alt={selected.collectionName}
                 width={64}
                 height={64}
                 className="rounded-xl flex-shrink-0"
               />
             )}
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-white">{selected.name}</p>
+              <p className="font-medium text-white">{selected.collectionName}</p>
               <p className="text-sm text-zinc-400">
-                {selected.artists.map((a) => a.name).join(", ")} ·{" "}
-                {selected.release_date.split("-")[0]}
+                {selected.artistName} ·{" "}
+                {new Date(selected.releaseDate).getFullYear()}
               </p>
             </div>
             <button

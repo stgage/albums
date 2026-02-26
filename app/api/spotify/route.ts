@@ -1,4 +1,4 @@
-import { searchAlbums } from "@/lib/spotify";
+import { searchAlbums } from "@/lib/itunes";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
@@ -10,7 +10,7 @@ export async function GET(req: Request) {
     const results = await searchAlbums(q);
     return NextResponse.json(results);
   } catch (error) {
-    console.error("Spotify search error:", error);
+    console.error("Search error:", error);
     return NextResponse.json({ error: "Search failed" }, { status: 500 });
   }
 }
