@@ -74,15 +74,13 @@ export default async function UserProfilePage({ params }: Props) {
       {/* Profile header */}
       <div className="flex items-start gap-5 mb-10">
         {user.image ? (
-          <div className="w-16 h-16 flex-shrink-0 relative rounded-full overflow-hidden">
-            <Image
-              src={user.image}
-              alt={user.name ?? user.username ?? ""}
-              fill
-              className="object-cover"
-              sizes="64px"
-            />
-          </div>
+          <Image
+            src={user.image}
+            alt={user.name ?? user.username ?? ""}
+            width={64}
+            height={64}
+            className="rounded-full object-cover flex-shrink-0"
+          />
         ) : (
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-violet-700 flex items-center justify-center flex-shrink-0">
             <span className="text-white text-xl font-bold">{initials}</span>

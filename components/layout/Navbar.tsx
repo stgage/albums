@@ -74,15 +74,13 @@ function AvatarDropdown() {
         aria-label="User menu"
       >
         {user.image ? (
-          <div className="w-8 h-8 flex-shrink-0 relative rounded-full overflow-hidden">
-            <Image
-              src={user.image}
-              alt={user.name ?? "User"}
-              fill
-              className="object-cover"
-              sizes="32px"
-            />
-          </div>
+          <Image
+            src={user.image}
+            alt={user.name ?? "User"}
+            width={32}
+            height={32}
+            className="rounded-full object-cover flex-shrink-0"
+          />
         ) : (
           <UserInitials name={user.name} />
         )}
