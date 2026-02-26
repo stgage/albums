@@ -3,8 +3,9 @@ import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Disc3, Calendar, Plus, Pencil } from "lucide-react";
+import { Disc3, Calendar, Plus } from "lucide-react";
 import { format } from "date-fns";
+import { RankedList } from "@/components/my/RankedList";
 import type { Metadata } from "next";
 
 type Props = { params: Promise<{ username: string }> };
@@ -50,10 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function UserProfilePage({ params }: Props) {
   const { username } = await params;
-  const [user, session] = await Promise.all([
-    getUserProfile(username),
-    auth(),
-  ]);
+  const [user, session] = await Promise.all([getUserProfile(username), auth()]);
   if (!user) notFound();
 
   const isOwner = (session?.user as { id?: string } | undefined)?.id === user.id;
@@ -106,22 +104,13 @@ export default async function UserProfilePage({ params }: Props) {
           </div>
         </div>
         {isOwner && (
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Link
-              href="/my/add"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add
-            </Link>
-            <Link
-              href="/my/collection"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/8 hover:bg-white/12 text-zinc-300 text-sm font-medium rounded-lg transition-colors"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-              Edit
-            </Link>
-          </div>
+          <Link
+            href="/my/add"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors flex-shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add
+          </Link>
         )}
       </div>
 
@@ -141,80 +130,31 @@ export default async function UserProfilePage({ params }: Props) {
         </div>
       ) : (
         <div className="space-y-12">
-          {/* Full ranked list */}
           {ranked.length > 0 && (
             <section>
-              <h2 className="font-serif text-xl font-bold text-white mb-4">
-                Ranked
-              </h2>
-              <div className="space-y-1">
-                {ranked.map((ua, i) => (
-                  <Link
-                    key={ua.id}
-                    href={`/album/${ua.album.id}`}
-                    className="group flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors"
-                    style={
-                      i === 0 && ua.album.dominantColor
-                        ? {
-                            background: `linear-gradient(135deg, ${ua.album.dominantColor}15, transparent)`,
-                          }
-                        : undefined
-                    }
-                  >
-                    <span className="w-7 text-right text-sm font-mono text-zinc-600 flex-shrink-0">
-                      {i + 1}
-                    </span>
-                    <div
-                      className="relative w-11 h-11 rounded-lg overflow-hidden flex-shrink-0"
-                      style={
-                        i === 0 && ua.album.dominantColor
-                          ? { boxShadow: `0 4px 16px ${ua.album.dominantColor}44` }
-                          : undefined
-                      }
-                    >
-                      {ua.album.coverUrl ? (
-                        <Image
-                          src={ua.album.coverUrl}
-                          alt={ua.album.title}
-                          fill
-                          className="object-cover"
-                          sizes="44px"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-surface-2 flex items-center justify-center">
-                          <Disc3 className="w-4 h-4 text-zinc-700" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white truncate group-hover:text-purple-300 transition-colors text-sm">
-                        {ua.album.title}
-                      </p>
-                      <p className="text-xs text-zinc-500 truncate">
-                        {ua.album.artist}
-                        {ua.album.releaseYear && ` · ${ua.album.releaseYear}`}
-                      </p>
-                      {ua.shortBlurb && (
-                        <p className="text-xs text-zinc-600 truncate mt-0.5 hidden md:block">
-                          {ua.shortBlurb}
-                        </p>
-                      )}
-                    </div>
-                  </Link>
-                ))}
-              </div>
+              <h2 className="font-serif text-xl font-bold text-white mb-4">Ranked</h2>
+              <RankedList
+                items={ranked.map((ua) => ({
+                  id: ua.id,
+                  rank: ua.rank as number,
+                  shortBlurb: ua.shortBlurb,
+                  album: ua.album,
+                }))}
+                isOwner={isOwner}
+              />
             </section>
           )}
 
-          {/* Unranked */}
           {unranked.length > 0 && (
             <section>
-              <h2 className="font-serif text-xl font-bold text-white mb-4">
-                Also in collection
-              </h2>
+              <h2 className="font-serif text-xl font-bold text-white mb-4">Also in collection</h2>
               <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
                 {unranked.map((ua) => (
-                  <Link key={ua.id} href={`/album/${ua.album.id}`} className="group">
+                  <Link
+                    key={ua.id}
+                    href={isOwner ? `/my/album/${ua.id}` : `/album/${ua.album.id}`}
+                    className="group"
+                  >
                     <div className="relative aspect-square rounded-lg overflow-hidden mb-1.5 bg-surface-2">
                       {ua.album.coverUrl ? (
                         <Image

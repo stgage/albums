@@ -114,14 +114,6 @@ function AvatarDropdown() {
               </Link>
             )}
             <Link
-              href="/my/collection"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
-            >
-              <Library className="w-4 h-4" />
-              Manage Collection
-            </Link>
-            <Link
               href="/settings"
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
@@ -162,7 +154,7 @@ export function Navbar() {
 
   // @ts-expect-error — custom session fields
   const username = session?.user?.username as string | null | undefined;
-  const myAlbumsHref = username ? `/u/${username}` : "/my/collection";
+  const myAlbumsHref = username ? `/u/${username}` : "/settings";
 
   const navLinks = [
     { href: "/", label: "Feed", icon: Radio },

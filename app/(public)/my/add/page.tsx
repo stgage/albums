@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -97,6 +98,10 @@ function TagInput({
 
 export default function MyAddPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  // @ts-expect-error custom session fields
+  const username = session?.user?.username as string | null | undefined;
+  const profileHref = username ? `/u/${username}` : "/";
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<SpotifyResult[]>([]);
@@ -152,7 +157,7 @@ export default function MyAddPage() {
         return;
       }
 
-      router.push("/my/collection");
+      router.push(profileHref);
     } finally {
       setSaving(false);
     }
@@ -162,11 +167,11 @@ export default function MyAddPage() {
     <div className="max-w-2xl mx-auto px-4 py-12">
       {/* Back */}
       <Link
-        href="/my/collection"
+        href={profileHref}
         className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors mb-8 w-fit"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to collection
+        Back
       </Link>
 
       <h1 className="font-serif text-4xl font-bold text-white mb-8">

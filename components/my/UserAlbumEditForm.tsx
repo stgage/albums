@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -128,6 +129,10 @@ export function UserAlbumEditForm({
   totalRanked: number;
 }) {
   const router = useRouter();
+  const { data: session } = useSession();
+  // @ts-expect-error custom session fields
+  const username = session?.user?.username as string | null | undefined;
+  const profileHref = username ? `/u/${username}` : "/";
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -182,7 +187,7 @@ export function UserAlbumEditForm({
       return;
     setDeleting(true);
     await fetch(`/api/user-albums/${userAlbum.id}`, { method: "DELETE" });
-    router.push("/my/collection");
+    router.push(profileHref);
   }
 
   async function handleAddRelisten() {
@@ -212,11 +217,11 @@ export function UserAlbumEditForm({
     <div>
       {/* Back */}
       <Link
-        href="/my/collection"
+        href={profileHref}
         className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors mb-8 w-fit"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to collection
+        Back
       </Link>
 
       {/* Album header */}
