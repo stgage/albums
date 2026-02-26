@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   Search,
@@ -15,14 +14,10 @@ import {
   Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ItunesAlbum } from "@/lib/itunes";
+import type { MusicBrainzAlbum } from "@/lib/musicbrainz";
 
 const inputClass =
   "w-full px-3 py-2.5 bg-surface-2 border border-white/8 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500/50";
-
-function artworkUrl(url: string, size = 600) {
-  return url.replace("100x100bb", `${size}x${size}bb`);
-}
 
 function TagInput({
   label,
@@ -100,8 +95,9 @@ export default function MyAddPage() {
   const profileHref = username ? `/u/${username}` : "/";
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
-  const [results, setResults] = useState<ItunesAlbum[]>([]);
-  const [selected, setSelected] = useState<ItunesAlbum | null>(null);
+  const [results, setResults] = useState<MusicBrainzAlbum[]>([]);
+  const [selected, setSelected] = useState<MusicBrainzAlbum | null>(null);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
 
   const [shortBlurb, setShortBlurb] = useState("");
   const [listenDate, setListenDate] = useState("");
@@ -109,6 +105,25 @@ export default function MyAddPage() {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  // Fetch cover art from Cover Art Archive when an album is selected
+  useEffect(() => {
+    if (!selected) {
+      setCoverUrl(null);
+      return;
+    }
+    fetch(`https://coverartarchive.org/release-group/${selected.id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const front = (data.images ?? []).find(
+          (img: { front: boolean }) => img.front
+        );
+        const url = front?.thumbnails?.["500"] ?? front?.image ?? null;
+        setCoverUrl(url);
+      })
+      .catch(() => {});
+  }, [selected]);
 
   async function handleSearch() {
     if (!searchQuery.trim()) return;
@@ -135,12 +150,14 @@ export default function MyAddPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          itunesId: selected.collectionId.toString(),
-          title: selected.collectionName,
-          artist: selected.artistName,
-          coverUrl: artworkUrl(selected.artworkUrl100),
-          releaseYear: new Date(selected.releaseDate).getFullYear(),
-          genres: selected.primaryGenreName ? [selected.primaryGenreName] : [],
+          mbid: selected.id,
+          title: selected.title,
+          artist: selected.artist,
+          coverUrl: coverUrl ?? null,
+          releaseYear: selected.releaseDate
+            ? parseInt(selected.releaseDate.split("-")[0])
+            : null,
+          genres: selected.genres,
           shortBlurb: shortBlurb || null,
           listenDate: listenDate || null,
           moodTags: tags,
@@ -211,7 +228,7 @@ export default function MyAddPage() {
             <div className="space-y-1.5">
               {results.map((result) => (
                 <button
-                  key={result.collectionId}
+                  key={result.id}
                   type="button"
                   onClick={() => {
                     setSelected(result);
@@ -219,30 +236,25 @@ export default function MyAddPage() {
                   }}
                   className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/8 transition-colors text-left border border-white/5 hover:border-white/10"
                 >
-                  {result.artworkUrl100 ? (
-                    <Image
-                      src={artworkUrl(result.artworkUrl100, 48)}
-                      alt={result.collectionName}
-                      width={48}
-                      height={48}
-                      className="rounded-lg object-cover flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-lg bg-surface-2 flex items-center justify-center flex-shrink-0">
-                      <Disc3 className="w-5 h-5 text-zinc-600" />
-                    </div>
-                  )}
+                  <div className="w-12 h-12 rounded-lg bg-surface-2 flex items-center justify-center flex-shrink-0">
+                    <Disc3 className="w-5 h-5 text-zinc-600" />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">
-                      {result.collectionName}
+                      {result.title}
+                      {result.primaryType === "EP" && (
+                        <span className="ml-2 text-xs font-normal text-zinc-500">
+                          EP
+                        </span>
+                      )}
                     </p>
                     <p className="text-xs text-zinc-400">
-                      {result.artistName} ·{" "}
-                      {new Date(result.releaseDate).getFullYear()} ·{" "}
-                      {result.trackCount} tracks
+                      {result.artist}
+                      {result.releaseDate &&
+                        ` · ${result.releaseDate.split("-")[0]}`}
                     </p>
                   </div>
-                  <Plus className="w-4 h-4 text-zinc-500" />
+                  <Plus className="w-4 h-4 text-zinc-500 flex-shrink-0" />
                 </button>
               ))}
             </div>
@@ -259,20 +271,24 @@ export default function MyAddPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Selected album header */}
           <div className="flex items-center gap-4 p-4 rounded-2xl glass border border-white/8">
-            {selected.artworkUrl100 && (
-              <Image
-                src={artworkUrl(selected.artworkUrl100)}
-                alt={selected.collectionName}
-                width={64}
-                height={64}
-                className="rounded-xl flex-shrink-0"
+            {coverUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={coverUrl}
+                alt={selected.title}
+                className="rounded-xl flex-shrink-0 object-cover w-16 h-16"
               />
+            ) : (
+              <div className="w-16 h-16 rounded-xl bg-surface-2 flex items-center justify-center flex-shrink-0">
+                <Disc3 className="w-6 h-6 text-zinc-600" />
+              </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-white">{selected.collectionName}</p>
+              <p className="font-medium text-white">{selected.title}</p>
               <p className="text-sm text-zinc-400">
-                {selected.artistName} ·{" "}
-                {new Date(selected.releaseDate).getFullYear()}
+                {selected.artist}
+                {selected.releaseDate &&
+                  ` · ${selected.releaseDate.split("-")[0]}`}
               </p>
             </div>
             <button

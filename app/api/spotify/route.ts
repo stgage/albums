@@ -1,4 +1,4 @@
-import { searchAlbums } from "@/lib/itunes";
+import { searchAlbums } from "@/lib/musicbrainz";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {

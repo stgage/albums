@@ -42,7 +42,7 @@ export async function POST(req: Request) {
 
   const body = await req.json();
   const {
-    itunesId,
+    mbid,
     albumId: existingAlbumId,
     title,
     artist,
@@ -63,9 +63,9 @@ export async function POST(req: Request) {
   if (existingAlbumId) {
     album = await prisma.album.findUnique({ where: { id: existingAlbumId } });
     if (!album) return NextResponse.json({ error: "Album not found" }, { status: 404 });
-  } else if (itunesId) {
-    // Find existing by iTunes ID (stored in spotifyId field) or create
-    album = await prisma.album.findUnique({ where: { spotifyId: itunesId } });
+  } else if (mbid) {
+    // Find existing by MusicBrainz ID (stored in spotifyId field) or create
+    album = await prisma.album.findUnique({ where: { spotifyId: mbid } });
 
     if (!album) {
       const coverUrl = providedCoverUrl ?? null;
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
 
       album = await prisma.album.create({
         data: {
-          spotifyId: itunesId,
+          spotifyId: mbid,
           title: title ?? "Unknown Album",
           artist: artist ?? "Unknown Artist",
           coverUrl,
