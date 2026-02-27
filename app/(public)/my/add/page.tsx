@@ -139,7 +139,9 @@ export default function MyAddPage() {
         const front = (data.images ?? []).find(
           (img: { front: boolean }) => img.front
         );
-        const url = front?.thumbnails?.["500"] ?? front?.image ?? null;
+        const raw = front?.thumbnails?.["500"] ?? front?.image ?? null;
+        // CAA JSON sometimes returns http:// — force https
+        const url = raw ? raw.replace(/^http:\/\//, "https://") : null;
         setCoverUrl(url);
       })
       .catch(() => {});
